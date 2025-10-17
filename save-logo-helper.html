@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YRK Logo Setup Helper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .logo-preview {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .path {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .success {
+            background: rgba(40, 167, 69, 0.2);
+            border-left-color: #28a745;
+        }
+        .warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-left-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 YRK Logo Setup Helper</h1>
+        <p>Follow these steps to add your YRK logo to the homepage hero section:</p>
+
+        <div class="step">
+            <h3>📁 Step 1: Save the YRK Logo Image</h3>
+            <p>1. <strong>Right-click</strong> on your YRK logo image</p>
+            <p>2. <strong>Select "Save image as..."</strong></p>
+            <p>3. <strong>Name it exactly:</strong> <code>yrk-logo-hero.png</code></p>
+            <p>4. <strong>Save it to this location:</strong></p>
+            <div class="path">c:\xampp\htdocs\Y R K MAHA BAZAAR\assets\images\yrk-logo-hero.png</div>
+        </div>
+
+        <div class="step warning">
+            <h3>⚠️ Important Notes</h3>
+            <p>• File name must be <strong>exactly</strong>: <code>yrk-logo-hero.png</code> (lowercase, no spaces)</p>
+            <p>• File format should be <strong>PNG</strong> for best quality</p>
+            <p>• Make sure the file is saved in the correct folder</p>
+        </div>
+
+        <div class="step">
+            <h3>🔄 Step 2: Refresh Your Website</h3>
+            <p>1. Go to your homepage: <a href="http://localhost/Y%20R%20K%20MAHA%20BAZAAR/" target="_blank" style="color: #ffd700;">http://localhost/Y R K MAHA BAZAAR/</a></p>
+            <p>2. Press <strong>F5</strong> or <strong>Ctrl+R</strong> to refresh</p>
+            <p>3. Your YRK logo should now appear in the hero section!</p>
+        </div>
+
+        <div class="step success">
+            <h3>✅ What You'll Get</h3>
+            <p>Once the logo is saved correctly, you'll see:</p>
+            <ul>
+                <li>🎨 <strong>Professional glassmorphism container</strong> with blur effects</li>
+                <li>✨ <strong>Smooth animations</strong> - pulse, hover, and fade-in effects</li>
+                <li>📱 <strong>Responsive design</strong> - perfect on all devices</li>
+                <li>🎭 <strong>Interactive hover effects</strong> - scale and shine animations</li>
+                <li>💫 <strong>Drop shadows</strong> for 3D appearance</li>
+            </ul>
+        </div>
+
+        <div class="logo-preview">
+            <h3>🖼️ Logo Preview Area</h3>
+            <p>Your YRK logo will appear here with beautiful effects:</p>
+            <div style="width: 200px; height: 100px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,255,255,0.3);">
+                <span style="color: rgba(255,255,255,0.7);">YRK Logo Here</span>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>🛠️ Troubleshooting</h3>
+            <p><strong>If logo doesn't appear:</strong></p>
+            <ul>
+                <li>Check file name is exactly: <code>yrk-logo-hero.png</code></li>
+                <li>Verify file is in the correct folder</li>
+                <li>Try refreshing the page (Ctrl+F5 for hard refresh)</li>
+                <li>Check if the file size is reasonable (not too large)</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <p><strong>🚀 Ready to see your logo in action!</strong></p>
+            <a href="http://localhost/Y%20R%20K%20MAHA%20BAZAAR/" target="_blank" 
+               style="display: inline-block; background: #ffd700; color: #333; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 10px;">
+                🏠 Go to Homepage
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Check if logo file exists
+        function checkLogo() {
+            const img = new Image();
+            img.onload = function() {
+                document.querySelector('.logo-preview').innerHTML = `
+                    <h3>✅ Logo Found!</h3>
+                    <img src="assets/images/yrk-logo-hero.png" style="max-width: 200px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <p style="color: #28a745; font-weight: bold;">Your logo is ready! Refresh your homepage to see it.</p>
+                `;
+            };
+            img.onerror = function() {
+                document.querySelector('.logo-preview').innerHTML = `
+                    <h3>❌ Logo Not Found</h3>
+                    <p style="color: #ffc107;">Please save the YRK logo image as instructed above.</p>
+                    <div style="width: 200px; height: 100px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,255,255,0.3);">
+                        <span style="color: rgba(255,255,255,0.7);">Logo Missing</span>
+                    </div>
+                `;
+            };
+            img.src = 'assets/images/yrk-logo-hero.png?' + new Date().getTime();
+        }
+
+        // Check logo on page load
+        window.onload = checkLogo;
+
+        // Check logo every 3 seconds
+        setInterval(checkLogo, 3000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+🎯 YRK LOGO SETUP INSTRUCTIONS
+===============================
+
+To add the YRK logo to your homepage hero section:
+
+📁 STEP 1: Save the YRK Logo Image
+----------------------------------
+1. Right-click on the YRK logo image you provided
+2. Save it with the exact name: yrk-logo-hero.png
+3. Place it in this folder: c:\xampp\htdocs\Y R K MAHA BAZAAR\assets\images\
+4. Full path should be: c:\xampp\htdocs\Y R K MAHA BAZAAR\assets\images\yrk-logo-hero.png
+
+🎨 STEP 2: Verify the Setup
+---------------------------
+1. Refresh your homepage (F5 or Ctrl+R)
+2. The YRK logo should now appear in the hero section (right side)
+3. It will have beautiful animations and effects
+
+✅ FEATURES ALREADY CONFIGURED:
+------------------------------
+✅ Professional glassmorphism container design
+✅ Smooth hover animations and effects
+✅ Continuous pulse animation for attention
+✅ Drop shadow effects for depth
+✅ Fully responsive design
+✅ Fade-in animation on page load
+
+📱 RESPONSIVE DESIGN:
+--------------------
+• Desktop: Max 400px height with full effects
+• Tablet: Max 250px height, optimized padding
+• Mobile: Max 200px height, compact design
+
+🎭 ANIMATION EFFECTS:
+--------------------
+• fadeInUp: Page load animation (1s)
+• pulse: Continuous breathing effect (2s infinite)
+• shine: Hover sweep effect (0.6s)
+• scale: Hover zoom effect (1.05x)
+
+💡 IMPORTANT:
+------------
+- File name must be exact: yrk-logo-hero.png (lowercase, no spaces)
+- File format: PNG (recommended for transparency)
+- Location: Must be in the assets/images/ folder
+
+Once you save the YRK logo image to the correct location, it will display beautifully with all the professional animations and effects! 🚀✨
