@@ -1,10 +1,37 @@
 services:
   - type: web
-    name: yrk-maha-bazaar
-    env: php
-    plan: free
+    name: yrk-maha-bazaar-web
+    env: docker
     buildCommand: ""
-    startCommand: php -S 0.0.0.0:10000 -t .
+    startCommand: ""
+    dockerfilePath: ./Dockerfile
+    disk:
+      name: yrk-maha-bazaar-disk
+      mountPath: /var/www/html
+      sizeGB: 1
     envVars:
-      - key: PORT
-        value: 10000
+      - key: DB_HOST
+        value: yrk-maha-bazaar-db
+      - key: DB_USER
+        value: yrk_user
+      - key: DB_PASS
+        value: your_secure_password_here
+      - key: DB_NAME
+        value: yrk_maha_bazaar
+
+  - type: pserv
+    name: yrk-maha-bazaar-db
+    env: docker
+    disk:
+      name: yrk-maha-bazaar-db-disk
+      mountPath: /var/lib/mysql
+      sizeGB: 1
+    envVars:
+      - key: MYSQL_ROOT_PASSWORD
+        value: your_secure_root_password_here
+      - key: MYSQL_DATABASE
+        value: yrk_maha_bazaar
+      - key: MYSQL_USER
+        value: yrk_user
+      - key: MYSQL_PASSWORD
+        value: your_secure_password_here

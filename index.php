@@ -1,4 +1,7 @@
 <?php
+// TEMPORARY TEST MESSAGE - Remove after debugging
+echo "<div style='background: green; color: white; padding: 10px; text-align: center; font-size: 18px; font-weight: bold;'>✅ TEST: Server is Running!</div>";
+
 $page_title = "Home";
 include 'includes/header.php';
 

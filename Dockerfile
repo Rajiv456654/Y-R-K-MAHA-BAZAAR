@@ -1,14 +1,24 @@
-# Use official PHP CLI image
-FROM php:8.2-cli
+FROM php:8.2-apache
 
-# Set working directory inside container
-WORKDIR /var/www/html
+# Force-configure and install using mysqlnd for better Docker compatibility
+RUN docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
+    && docker-php-ext-install pdo_mysql
 
-# Copy all project files into container
-COPY . .
+# Copy custom PHP configuration to enable pdo_mysql
+COPY 99-pdo-mysql.ini /usr/local/etc/php/conf.d/
 
-# Expose port 10000 for Render
-EXPOSE 10000
+# Enable Apache mod_rewrite for URL routing (if needed)
+RUN a2enmod rewrite
 
-# Start PHP built-in server
-CMD ["php", "-S", "0.0.0.0:10000", "-t", "."]
+# Copy your website files
+COPY . /var/www/html
+
+# Set proper permissions for web files
+RUN chown -R www-data:www-data /var/www/html
+RUN chmod -R 755 /var/www/html
+
+# Expose port 80 for web server
+EXPOSE 80
+
+# Start Apache in foreground
+CMD ["apache2-foreground"]

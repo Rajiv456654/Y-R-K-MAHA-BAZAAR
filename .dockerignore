@@ -1,0 +1,32 @@
+# Exclude version control
+.git
+.gitignore
+
+# Exclude logs and temporary files
+logs/
+*.log
+error_log
+
+# Exclude IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Exclude OS files
+.DS_Store
+Thumbs.db
+
+# Exclude node_modules if any
+node_modules/
+
+# Exclude test files
+tests/
+
+# Exclude documentation (optional, but good for size)
+*.md
+docs/
+
+# Exclude backup files
+*.bak
+*.backup
