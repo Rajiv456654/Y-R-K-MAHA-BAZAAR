@@ -8,12 +8,9 @@ $password = getenv('DB_PASS') ?: "";
 $database = getenv('DB_NAME') ?: "yrk_maha_bazaar";
 
 try {
-    // Create connection using PDO (TEMPORARILY COMMENTED OUT FOR DEBUGGING)
-    // $pdo = new PDO("mysql:host=$servername;dbname=$database", $username, $password);
-    // $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // TEMPORARY: Set to null so rest of app doesn't crash
-    $pdo = null;
+    // Create connection using PDO
+    $pdo = new PDO("mysql:host=$servername;dbname=$database", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Also create mysqli connection for compatibility
     $conn = new mysqli($servername, $username, $password, $database);
