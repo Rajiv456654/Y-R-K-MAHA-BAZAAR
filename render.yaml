@@ -18,20 +18,20 @@ services:
         value: your_secure_password_here
       - key: DB_NAME
         value: yrk_maha_bazaar
-      - key: DB_PORT
-        value: 5432
 
   - type: pserv
     name: yrk-maha-bazaar-db
     env: docker
     disk:
       name: yrk-maha-bazaar-db-disk
-      mountPath: /var/lib/postgresql/data
+      mountPath: /var/lib/mysql
       sizeGB: 1
     envVars:
-      - key: POSTGRES_DB
+      - key: MYSQL_ROOT_PASSWORD
+        value: your_secure_root_password_here
+      - key: MYSQL_DATABASE
         value: yrk_maha_bazaar
-      - key: POSTGRES_USER
+      - key: MYSQL_USER
         value: yrk_user
-      - key: POSTGRES_PASSWORD
+      - key: MYSQL_PASSWORD
         value: your_secure_password_here

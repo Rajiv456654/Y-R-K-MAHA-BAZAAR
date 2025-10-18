@@ -1,17 +1,15 @@
 <?php
-$servername = 'dpg-d3pqr2l6ubrc73fdtin0-a';  // Your PostgreSQL host
-$username = 'yrk_db_user';
-$password = 'XSZdI0wR6ucglfxspHIRlFz8wXoXQvmU';
-$database = 'yrk_db';
+$servername = 'localhost';  // Use your MySQL host
+$username = 'root';         // Your MySQL username
+$password = '';             // Your MySQL password
+$database = 'yrk_maha_bazaar';  // Your MySQL database name
 
 try {
-    // Create PDO connection for PostgreSQL with explicit port
-    $pdo = new PDO("pgsql:host=$servername;port=5432;dbname=$database", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    // Create PDO connection for MySQL
+    $pdo = new PDO("mysql:host=$servername;dbname=$database", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Also create mysqli connection for compatibility (if needed for MySQL)
-    // Note: mysqli is for MySQL, not PostgreSQL - this may need adjustment
+    // Also create mysqli connection for compatibility
     $conn = new mysqli($servername, $username, $password, $database);
 
     if ($conn->connect_error) {
