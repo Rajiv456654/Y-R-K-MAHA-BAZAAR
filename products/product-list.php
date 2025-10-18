@@ -19,7 +19,7 @@ $records_per_page = 12;
 $offset = ($page - 1) * $records_per_page;
 
 // Build query
-$where_conditions = ["p.is_active = 1"];
+$where_conditions = ["p.is_active = TRUE"];
 $params = [];
 $param_types = "";
 
