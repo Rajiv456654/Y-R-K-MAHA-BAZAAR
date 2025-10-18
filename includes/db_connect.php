@@ -5,19 +5,19 @@ $password = 'XSZdI0wR6ucglfxspHIRlFz8wXoXQvmU';
 $database = 'yrk_db';
 
 try {
-    // Create PDO connection for PostgreSQL with explicit port 5432
-    $pdo = new PDO("pgsql:host=$servername;port=5432;dbname=$database", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    // Create the PDO connection object using the CORRECT PGSQL driver and port
+    $pdo = new PDO("pgsql:host=$servername;port=5432;dbname=$database", $username, $password);
+    
+    // CRITICAL FIX: Assign the PDO object to the variable your index.php expects
+    $conn = $pdo; 
+    
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // mysqli code removed - using PostgreSQL only
-    // $conn = new mysqli($servername, $username, $password, $database);
-
-    // if ($conn->connect_error) {
-    //     die("Connection failed: " . $conn->connect_error);
-    // }
-
-} catch(PDOException $e) {
+} catch (PDOException $e) {
+    // If the connection fails, set $conn to null to prevent further errors
+    $conn = null; 
     die("Connection failed: " . $e->getMessage());
 }
+
+// mysqli code removed - using PostgreSQL PDO only
 ?>
