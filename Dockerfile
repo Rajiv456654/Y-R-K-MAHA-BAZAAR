@@ -1,7 +1,10 @@
 # Use the official PHP Apache image
 FROM php:8.2-apache
 
-# Install PDO PostgreSQL driver
+# Install PostgreSQL development client libraries
+RUN apt-get update && apt-get install -y libpq-dev
+
+# Install the PHP extensions using the newly installed libraries
 RUN docker-php-ext-install pdo_pgsql pgsql
 
 # Copy custom PHP configuration to ensure extensions are loaded
