@@ -90,7 +90,7 @@ $categories_result = $conn->query($categories_query);
         </div>
 
         <div class="row">
-            <?php while ($category = $categories_result->fetch_assoc()): ?>
+            <?php while ($category = $categories_result->fetch(PDO::FETCH_ASSOC)): ?>
             <div class="col-lg-4 col-md-6 mb-4">
                 <a href="products/product-list.php?category=<?php echo $category['category_id']; ?>" class="category-card d-block text-decoration-none">
                     <div class="category-content">
@@ -116,7 +116,7 @@ $categories_result = $conn->query($categories_query);
         </div>
 
         <div class="row">
-            <?php while ($product = $featured_result->fetch_assoc()): ?>
+            <?php while ($product = $featured_result->fetch(PDO::FETCH_ASSOC)): ?>
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card product-card h-100">
                     <img src="assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>"
