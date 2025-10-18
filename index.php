@@ -2,6 +2,9 @@
 $page_title = "Home";
 include 'includes/header.php';
 
+// Include database connection
+include 'includes/db_connect.php';
+
 // Fetch featured products
 $featured_query = "SELECT p.*, c.category_name FROM products p
                    LEFT JOIN categories c ON p.category_id = c.category_id

@@ -9,8 +9,15 @@ try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
-    echo "✅ Database connected successfully!";
+    // echo "✅ Database connected successfully!";  // Commented out to prevent session_start() issues
 } catch (PDOException $e) {
     echo "❌ Connection failed: " . $e->getMessage();
+}
+
+// Also create mysqli connection for compatibility with existing code
+$conn = new mysqli($host, $user, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
 ?>
