@@ -21,7 +21,6 @@ $offset = ($page - 1) * $records_per_page;
 // Build query
 $where_conditions = ["p.is_active = TRUE"];
 $params = [];
-$param_types = "";
 
 if (!empty($search)) {
     $where_conditions[] = "(p.name LIKE ? OR p.description LIKE ?)";
@@ -34,7 +33,6 @@ if (!empty($search)) {
 if ($category_filter > 0) {
     $where_conditions[] = "p.category_id = ?";
     $params[] = $category_filter;
-    $param_types .= "i";
 }
 
 if (!empty($price_range)) {
@@ -71,9 +69,10 @@ $count_query = "SELECT COUNT(*) as total FROM products p
                 WHERE $where_clause";
 $count_stmt = $conn->prepare($count_query);
 if (!empty($params)) {
-    $count_stmt->bind_param($param_types, ...$params);
+    $count_stmt->execute($params);
+} else {
+    $count_stmt->execute();
 }
-$count_stmt->execute();
 $total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
@@ -86,13 +85,13 @@ $query = "SELECT p.*, c.category_name FROM products p
 
 $params[] = $records_per_page;
 $params[] = $offset;
-$param_types .= "ii";
 
 $stmt = $conn->prepare($query);
 if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
 }
-$stmt->execute();
 // $products_result = $stmt->get_result();  // Removed for PDO
 
 // Get categories for filter
