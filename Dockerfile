@@ -5,6 +5,9 @@ FROM php:8.2-apache
 RUN docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
     && docker-php-ext-install pdo pdo_mysql mysqli
 
+# Copy custom PHP configuration to ensure extensions are loaded
+COPY 99-pdo-mysql.ini /usr/local/etc/php/conf.d/
+
 # Enable Apache mod_rewrite (for PHP frameworks like Laravel or custom routes)
 RUN a2enmod rewrite
 
