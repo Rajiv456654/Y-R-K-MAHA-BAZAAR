@@ -74,7 +74,7 @@ if (!empty($params)) {
     $count_stmt->bind_param($param_types, ...$params);
 }
 $count_stmt->execute();
-$total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+$total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Get products
@@ -93,7 +93,7 @@ if (!empty($params)) {
     $stmt->bind_param($param_types, ...$params);
 }
 $stmt->execute();
-$products_result = $stmt->get_result();
+// $products_result = $stmt->get_result();  // Removed for PDO
 
 // Get categories for filter
 $categories_query = "SELECT * FROM categories ORDER BY category_name";
@@ -206,8 +206,8 @@ $categories_result = $conn->query($categories_query);
 
     <!-- Products Grid -->
     <div class="row">
-        <?php if ($products_result->num_rows > 0): ?>
-            <?php while ($product = $products_result->fetch_assoc()): ?>
+        <?php if ($stmt->rowCount() > 0): ?>
+            <?php while ($product = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
             <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                 <div class="card product-card h-100 shadow-hover border-0">
                     <div class="position-relative overflow-hidden">
