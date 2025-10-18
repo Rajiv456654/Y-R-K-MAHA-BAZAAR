@@ -10,13 +10,12 @@ try {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 
-    // Also create mysqli connection for compatibility (if needed for MySQL)
-    // Note: mysqli is for MySQL, not PostgreSQL - this may need adjustment
-    $conn = new mysqli($servername, $username, $password, $database);
+    // mysqli code removed - using PostgreSQL only
+    // $conn = new mysqli($servername, $username, $password, $database);
 
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
+    // if ($conn->connect_error) {
+    //     die("Connection failed: " . $conn->connect_error);
+    // }
 
 } catch(PDOException $e) {
     die("Connection failed: " . $e->getMessage());
