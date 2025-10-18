@@ -8,7 +8,7 @@ include 'includes/db_connect.php';
 // Fetch featured products
 $featured_query = "SELECT p.*, c.category_name FROM products p
                    LEFT JOIN categories c ON p.category_id = c.category_id
-                   WHERE p.is_active = 1
+                   WHERE p.is_active = TRUE
                    ORDER BY p.created_at DESC
                    LIMIT 8";
 $featured_result = $conn->query($featured_query);
