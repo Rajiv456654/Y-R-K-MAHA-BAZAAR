@@ -1,14 +1,7 @@
 FROM php:8.2-apache
 
-# Force-configure and install using mysqlnd for better Docker compatibility
-RUN docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
-    && docker-php-ext-install pdo_mysql
-
-# Copy custom PHP configuration to enable pdo_mysql
-COPY 99-pdo-mysql.ini /usr/local/etc/php/conf.d/
-
-# Enable Apache mod_rewrite for URL routing (if needed)
-RUN a2enmod rewrite
+# Install PDO PostgreSQL driver
+RUN docker-php-ext-install pdo pdo_pgsql
 
 # Copy your website files
 COPY . /var/www/html
