@@ -1,23 +1,22 @@
 <?php
-$host = 'dpg-d3pqr2l6ubrc73fdtin0-a';  // ✅ Replace with your Render hostname
-$port = '5432';
-$dbname = 'yrk_db';
-$user = 'yrk_db_user';
-$password = 'XSZdI0wR6ucglfxspHIRlFz8wXoXQvmU';
+$servername = 'localhost';  // Use your MySQL host
+$username = 'root';         // Your MySQL username
+$password = '';             // Your MySQL password
+$database = 'yrk_maha_bazaar';  // Your MySQL database name
 
 try {
-    $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-    // echo "✅ Database connected successfully!";  // Commented out to prevent session_start() issues
-} catch (PDOException $e) {
-    echo "❌ Connection failed: " . $e->getMessage();
-}
+    // Create PDO connection for MySQL
+    $pdo = new PDO("mysql:host=$servername;dbname=$database", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Also create mysqli connection for compatibility with existing code
-$conn = new mysqli($host, $user, $password, $dbname);
+    // Also create mysqli connection for compatibility
+    $conn = new mysqli($servername, $username, $password, $database);
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
 }
 ?>
