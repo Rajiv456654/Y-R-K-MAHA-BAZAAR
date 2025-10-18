@@ -1,17 +1,12 @@
 <?php
-// Database connection configuration for Y R K MAHA BAZAAR
-
-// Use environment variables for production (Render) or fallback to local defaults
-$host = getenv('DB_HOST') ?: 'dpg-d3pqr2l6ubrc73fdtin0-a.internal';
-$db   = getenv('DB_NAME') ?: 'yrk_db';
-$user = getenv('DB_USER') ?: 'yrk_db_user';
-$pass = getenv('DB_PASS') ?: 'XSZdI0wR6ucglfxspHIRlFz8wXoXQvmU';
-$port = getenv('DB_PORT') ?: '5432';
-
-$dsn = "pgsql:host=$host;port=$port;dbname=$db;";
+$host = 'dpg-d3pqr2l6ubrc73fdtin0-a';  // ✅ Replace with your Render hostname
+$port = '5432';
+$dbname = 'yrk_db';
+$user = 'yrk_db_user';
+$password = 'XSZdI0wR6ucglfxspHIRlFz8wXoXQvmU';
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, [
+    $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
     echo "✅ Database connected successfully!";
