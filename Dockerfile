@@ -1,8 +1,9 @@
 # Use the official PHP Apache image
 FROM php:8.2-apache
 
-# Install system dependencies and MySQL libraries
-RUN apt-get update && apt-get install -y libmysqlclient-dev && docker-php-ext-install pdo pdo_mysql mysqli
+# Install PDO MySQL and mysqli using mysqlnd native driver (no external dependencies needed)
+RUN docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
+    && docker-php-ext-install pdo pdo_mysql mysqli
 
 # Enable Apache mod_rewrite (for PHP frameworks like Laravel or custom routes)
 RUN a2enmod rewrite
