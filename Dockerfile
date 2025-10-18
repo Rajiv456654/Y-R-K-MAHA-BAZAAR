@@ -1,9 +1,8 @@
 # Use the official PHP Apache image
 FROM php:8.2-apache
 
-# Install PDO MySQL and mysqli using mysqlnd native driver
-RUN docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
-    && docker-php-ext-install pdo pdo_mysql mysqli
+# Install PDO PostgreSQL driver
+RUN docker-php-ext-install pdo_pgsql pgsql
 
 # Copy custom PHP configuration to ensure extensions are loaded
 COPY 99-pdo-mysql.ini /usr/local/etc/php/conf.d/
