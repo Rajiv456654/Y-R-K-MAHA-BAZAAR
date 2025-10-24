@@ -465,20 +465,48 @@ $page_title = "Admin Dashboard";
                 </div>
             </div>
 
-            <div class="container-fluid p-4">
-                <!-- Welcome Section -->
-                <div class="welcome-section">
-                    <div class="welcome-icon">👋</div>
-                    <h3 class="fw-bold mb-3">Welcome to Your Dashboard!</h3>
-                    <p class="text-muted mb-4">Manage your e-commerce store efficiently with our comprehensive admin panel.</p>
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="fw-bold text-primary fs-4"><?php echo date('H:i'); ?></div>
-                            <small class="text-muted">Current Time</small>
+            <div class="row">
+                <!-- Recent Orders -->
+                <div class="col-lg-8">
+                    <div class="recent-section">
+                        <h4 class="fw-bold mb-4">📋 Recent Orders</h4>
+                        <?php if (count($recent_orders) > 0): ?>
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recent_orders as $order): ?>
+                                    <tr>
+                                        <td class="fw-bold">#<?php echo $order['order_id']; ?></td>
+                                        <td><?php echo htmlspecialchars($order['customer_name']); ?></td>
+                                        <td class="fw-bold text-success">₹<?php echo number_format($order['total_price']); ?></td>
+                                        <td>
+                                            <span class="badge badge-status bg-<?php
+                                                echo $order['status'] == 'Delivered' ? 'success' :
+                                                    ($order['status'] == 'Cancelled' ? 'danger' :
+                                                    ($order['status'] == 'Shipped' ? 'primary' :
+                                                    ($order['status'] == 'Processing' ? 'info' : 'warning')));
+                                            ?>">
+                                                <?php echo $order['status']; ?>
+                                            </span>
+                                        </td>
+                                        <td><?php echo date('M d, Y', strtotime($order['order_date'])); ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-md-3">
-                            <div class="fw-bold text-success fs-4"><?php echo date('M d'); ?></div>
-                            <small class="text-muted">Today's Date</small>
+                        <?php else: ?>
+                        <div class="text-center py-4">
+                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
                             <h5>No orders yet</h5>
                             <p class="text-muted">Orders will appear here once customers start purchasing.</p>
                         </div>
@@ -518,6 +546,31 @@ $page_title = "Admin Dashboard";
                             <p class="text-muted small">No low stock alerts at the moment.</p>
                         </div>
                         <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <div class="welcome-icon">👋</div>
+                <h3 class="fw-bold mb-3">Welcome to Your Dashboard!</h3>
+                <p class="text-muted mb-4">Manage your e-commerce store efficiently with our comprehensive admin panel.</p>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="fw-bold text-primary fs-4"><?php echo date('H:i'); ?></div>
+                        <small class="text-muted">Current Time</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="fw-bold text-success fs-4"><?php echo date('M d'); ?></div>
+                        <small class="text-muted">Today's Date</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="fw-bold text-info fs-4"><?php echo $stats['pending_orders']; ?></div>
+                        <small class="text-muted">Pending Orders</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="fw-bold text-warning fs-4"><?php echo $stats['new_messages']; ?></div>
+                        <small class="text-muted">New Messages</small>
                     </div>
                 </div>
             </div>
