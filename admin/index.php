@@ -11,9 +11,9 @@ if (!isAdminLoggedIn()) {
 
 // Get dashboard statistics
 $stats_query = "SELECT 
-    (SELECT COUNT(*) FROM products WHERE is_active = 1) as total_products,
+    (SELECT COUNT(*) FROM products WHERE is_active = TRUE) as total_products,
     (SELECT COUNT(*) FROM categories) as total_categories,
-    (SELECT COUNT(*) FROM users WHERE is_active = 1) as total_users,
+    (SELECT COUNT(*) FROM users WHERE is_active = TRUE) as total_users,
     (SELECT COUNT(*) FROM orders) as total_orders,
     (SELECT COUNT(*) FROM orders WHERE status = 'Pending') as pending_orders,
     (SELECT COUNT(*) FROM orders WHERE status = 'Processing') as processing_orders,
@@ -22,14 +22,18 @@ $stats_query = "SELECT
     (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'Delivered') as total_revenue";
 
 try {
-    $stats = $conn->query($stats_query)->fetch_assoc();
+    $stats_stmt = $conn->prepare($stats_query);
+    $stats_stmt->execute();
+    $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
     
     // Try to get new messages count separately (in case table doesn't exist)
     try {
-        $messages_query = "SELECT COUNT(*) as new_messages FROM contact_messages WHERE created_at >= DATE(NOW()) - INTERVAL 7 DAY";
-        $messages_result = $conn->query($messages_query);
+        $messages_query = "SELECT COUNT(*) as new_messages FROM contact_messages WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'";
+        $messages_stmt = $conn->prepare($messages_query);
+        $messages_stmt->execute();
+        $messages_result = $messages_stmt->fetch(PDO::FETCH_ASSOC);
         if ($messages_result) {
-            $stats['new_messages'] = $messages_result->fetch_assoc()['new_messages'];
+            $stats['new_messages'] = $messages_result['new_messages'];
         } else {
             $stats['new_messages'] = 0;
         }
@@ -55,28 +59,26 @@ try {
 
 // Get recent orders
 try {
-    $recent_orders_query = "SELECT o.*, u.name as customer_name 
-                            FROM orders o 
-                            JOIN users u ON o.user_id = u.user_id 
-                            ORDER BY o.order_date DESC 
+    $recent_orders_query = "SELECT o.*, u.name as customer_name
+                            FROM orders o
+                            JOIN users u ON o.user_id = u.user_id
+                            ORDER BY o.order_date DESC
                             LIMIT 5";
-    $recent_orders = $conn->query($recent_orders_query);
-    if (!$recent_orders) {
-        $recent_orders = $conn->query("SELECT 1 WHERE 0"); // Empty result set
-    }
+    $recent_orders_stmt = $conn->prepare($recent_orders_query);
+    $recent_orders_stmt->execute();
+    $recent_orders = $recent_orders_stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $recent_orders = $conn->query("SELECT 1 WHERE 0"); // Empty result set
+    $recent_orders = [];
 }
 
 // Get low stock products
 try {
-    $low_stock_query = "SELECT * FROM products WHERE stock <= 5 AND is_active = 1 ORDER BY stock ASC LIMIT 5";
-    $low_stock = $conn->query($low_stock_query);
-    if (!$low_stock) {
-        $low_stock = $conn->query("SELECT 1 WHERE 0"); // Empty result set
-    }
+    $low_stock_query = "SELECT * FROM products WHERE stock <= 5 AND is_active = TRUE ORDER BY stock ASC LIMIT 5";
+    $low_stock_stmt = $conn->prepare($low_stock_query);
+    $low_stock_stmt->execute();
+    $low_stock = $low_stock_stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $low_stock = $conn->query("SELECT 1 WHERE 0"); // Empty result set
+    $low_stock = [];
 }
 
 $page_title = "Admin Dashboard";
@@ -463,48 +465,20 @@ $page_title = "Admin Dashboard";
                 </div>
             </div>
 
-            <div class="row">
-                <!-- Recent Orders -->
-                <div class="col-lg-8">
-                    <div class="recent-section">
-                        <h4 class="fw-bold mb-4">📋 Recent Orders</h4>
-                        <?php if ($recent_orders->num_rows > 0): ?>
-                        <div class="table-responsive">
-                            <table class="table table-modern">
-                                <thead>
-                                    <tr>
-                                        <th>Order ID</th>
-                                        <th>Customer</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php while ($order = $recent_orders->fetch_assoc()): ?>
-                                    <tr>
-                                        <td class="fw-bold">#<?php echo $order['order_id']; ?></td>
-                                        <td><?php echo htmlspecialchars($order['customer_name']); ?></td>
-                                        <td class="fw-bold text-success">₹<?php echo number_format($order['total_price']); ?></td>
-                                        <td>
-                                            <span class="badge badge-status bg-<?php 
-                                                echo $order['status'] == 'Delivered' ? 'success' : 
-                                                    ($order['status'] == 'Cancelled' ? 'danger' : 
-                                                    ($order['status'] == 'Shipped' ? 'primary' : 
-                                                    ($order['status'] == 'Processing' ? 'info' : 'warning'))); 
-                                            ?>">
-                                                <?php echo $order['status']; ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('M d, Y', strtotime($order['order_date'])); ?></td>
-                                    </tr>
-                                    <?php endwhile; ?>
-                                </tbody>
-                            </table>
+            <div class="container-fluid p-4">
+                <!-- Welcome Section -->
+                <div class="welcome-section">
+                    <div class="welcome-icon">👋</div>
+                    <h3 class="fw-bold mb-3">Welcome to Your Dashboard!</h3>
+                    <p class="text-muted mb-4">Manage your e-commerce store efficiently with our comprehensive admin panel.</p>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="fw-bold text-primary fs-4"><?php echo date('H:i'); ?></div>
+                            <small class="text-muted">Current Time</small>
                         </div>
-                        <?php else: ?>
-                        <div class="text-center py-4">
-                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                        <div class="col-md-3">
+                            <div class="fw-bold text-success fs-4"><?php echo date('M d'); ?></div>
+                            <small class="text-muted">Today's Date</small>
                             <h5>No orders yet</h5>
                             <p class="text-muted">Orders will appear here once customers start purchasing.</p>
                         </div>
@@ -516,9 +490,9 @@ $page_title = "Admin Dashboard";
                 <div class="col-lg-4">
                     <div class="recent-section">
                         <h4 class="fw-bold mb-4">⚠️ Low Stock Alert</h4>
-                        <?php if ($low_stock->num_rows > 0): ?>
+                        <?php if (count($low_stock) > 0): ?>
                         <div class="list-group list-group-flush">
-                            <?php while ($product = $low_stock->fetch_assoc()): ?>
+                            <?php foreach ($low_stock as $product): ?>
                             <div class="list-group-item border-0 px-0">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
@@ -530,7 +504,7 @@ $page_title = "Admin Dashboard";
                                     </span>
                                 </div>
                             </div>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </div>
                         <div class="text-center mt-3">
                             <a href="manage-products.php" class="btn btn-outline-primary btn-sm">
