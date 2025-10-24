@@ -16,17 +16,16 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     // Check if product has orders
     $check_orders = "SELECT COUNT(*) as count FROM order_items WHERE product_id = ?";
     $check_stmt = $conn->prepare($check_orders);
-    $check_stmt->bind_param("i", $product_id);
-    $check_stmt->execute();
-    $order_count = $check_stmt->get_result()->fetch_assoc()['count'];
+    $check_stmt->execute([$product_id]);
+    $order_count = $check_stmt->fetch(PDO::FETCH_ASSOC)['count'];
     
     if ($order_count > 0) {
         // Soft delete - just deactivate
-        $delete_query = "UPDATE products SET is_active = 0 WHERE product_id = ?";
+        $delete_query = "UPDATE products SET is_active = FALSE WHERE product_id = ?";
         $delete_stmt = $conn->prepare($delete_query);
-        $delete_stmt->bind_param("i", $product_id);
+        $delete_stmt->execute([$product_id]);
         
-        if ($delete_stmt->execute()) {
+        if ($delete_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Product deactivated successfully.";
         } else {
             $_SESSION['error_message'] = "Failed to deactivate product.";
@@ -35,9 +34,9 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
         // Hard delete
         $delete_query = "DELETE FROM products WHERE product_id = ?";
         $delete_stmt = $conn->prepare($delete_query);
-        $delete_stmt->bind_param("i", $product_id);
+        $delete_stmt->execute([$product_id]);
         
-        if ($delete_stmt->execute()) {
+        if ($delete_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Product deleted successfully.";
         } else {
             $_SESSION['error_message'] = "Failed to delete product.";
@@ -78,30 +77,31 @@ if ($category_filter > 0) {
 }
 
 if ($status_filter === 'active') {
-    $where_conditions[] = "p.is_active = 1";
+    $where_conditions[] = "p.is_active = TRUE";
 } elseif ($status_filter === 'inactive') {
-    $where_conditions[] = "p.is_active = 0";
+    $where_conditions[] = "p.is_active = FALSE";
 }
 
 $where_clause = implode(" AND ", $where_conditions);
 
 // Get total count
-$count_query = "SELECT COUNT(*) as total FROM products p 
-                LEFT JOIN categories c ON p.category_id = c.category_id 
+$count_query = "SELECT COUNT(*) as total FROM products p
+                LEFT JOIN categories c ON p.category_id = c.category_id
                 WHERE $where_clause";
 $count_stmt = $conn->prepare($count_query);
 if (!empty($params)) {
-    $count_stmt->bind_param($param_types, ...$params);
+    $count_stmt->execute($params);
+} else {
+    $count_stmt->execute();
 }
-$count_stmt->execute();
-$total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+$total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Get products
-$query = "SELECT p.*, c.category_name FROM products p 
-          LEFT JOIN categories c ON p.category_id = c.category_id 
-          WHERE $where_clause 
-          ORDER BY p.created_at DESC 
+$query = "SELECT p.*, c.category_name FROM products p
+          LEFT JOIN categories c ON p.category_id = c.category_id
+          WHERE $where_clause
+          ORDER BY p.created_at DESC
           LIMIT ? OFFSET ?";
 
 $params[] = $records_per_page;
@@ -110,14 +110,17 @@ $param_types .= "ii";
 
 $stmt = $conn->prepare($query);
 if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
 }
-$stmt->execute();
-$products_result = $stmt->get_result();
+$products_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get categories for filter
 $categories_query = "SELECT * FROM categories ORDER BY category_name";
-$categories_result = $conn->query($categories_query);
+$categories_stmt = $conn->prepare($categories_query);
+$categories_stmt->execute();
+$categories_result = $categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "Manage Products";
@@ -148,12 +151,12 @@ include 'includes/admin-header.php';
                 <label for="category" class="form-label">Category</label>
                 <select class="form-select" id="category" name="category">
                     <option value="">All Categories</option>
-                    <?php while ($category = $categories_result->fetch_assoc()): ?>
-                    <option value="<?php echo $category['category_id']; ?>" 
+                    <?php foreach ($categories_result as $category): ?>
+                    <option value="<?php echo $category['category_id']; ?>"
                             <?php echo $category_filter == $category['category_id'] ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($category['category_name']); ?>
                     </option>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </select>
             </div>
             
@@ -184,7 +187,7 @@ include 'includes/admin-header.php';
         <h5 class="mb-0">Products (<?php echo $total_records; ?>)</h5>
     </div>
     <div class="card-body p-0">
-        <?php if ($products_result->num_rows > 0): ?>
+        <?php if (count($products_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
@@ -200,7 +203,7 @@ include 'includes/admin-header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($product = $products_result->fetch_assoc()): ?>
+                    <?php foreach ($products_result as $product): ?>
                     <tr>
                         <td>
                             <img src="../assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>" 
@@ -242,7 +245,7 @@ include 'includes/admin-header.php';
                             </div>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
