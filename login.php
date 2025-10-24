@@ -20,20 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error_message = "Please fill in all fields.";
     } else {
         // Check user credentials
-        $query = "SELECT user_id, name, email, password FROM users WHERE email = ? AND is_active = 1";
+        $query = "SELECT user_id, name, email, password FROM users WHERE email = ? AND is_active = TRUE";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $stmt->execute([$email]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($result->num_rows == 1) {
-            $user = $result->fetch_assoc();
-            
-            if (password_verify($password, $user['password'])) {
+        if ($result) {
+            if (password_verify($password, $result['password'])) {
                 // Login successful
-                $_SESSION['user_id'] = $user['user_id'];
-                $_SESSION['user_name'] = $user['name'];
-                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_id'] = $result['user_id'];
+                $_SESSION['user_name'] = $result['name'];
+                $_SESSION['user_email'] = $result['email'];
                 
                 // Redirect to intended page or home
                 $redirect_url = isset($_GET['redirect']) ? $_GET['redirect'] : 'index.php';
