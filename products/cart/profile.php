@@ -29,18 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Check if email is already taken by another user
         $email_check = "SELECT user_id FROM users WHERE email = ? AND user_id != ?";
         $email_stmt = $conn->prepare($email_check);
-        $email_stmt->bind_param("si", $email, $user_id);
-        $email_stmt->execute();
-        
-        if ($email_stmt->get_result()->num_rows > 0) {
+        $email_stmt->execute([$email, $user_id]);
+
+        if ($email_stmt->fetch(PDO::FETCH_ASSOC)) {
             $error_message = "This email is already registered by another user.";
         } else {
             // Update basic info
             $update_query = "UPDATE users SET name = ?, email = ?, phone = ?, address = ? WHERE user_id = ?";
             $update_stmt = $conn->prepare($update_query);
-            $update_stmt->bind_param("ssssi", $name, $email, $phone, $address, $user_id);
-            
-            if ($update_stmt->execute()) {
+            $update_stmt->execute([$name, $email, $phone, $address, $user_id]);
+
+            if ($update_stmt->rowCount() > 0) {
                 $success_message = "Profile updated successfully!";
                 
                 // Handle password change if provided
@@ -53,18 +52,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         // Verify current password
                         $pass_query = "SELECT password FROM users WHERE user_id = ?";
                         $pass_stmt = $conn->prepare($pass_query);
-                        $pass_stmt->bind_param("i", $user_id);
-                        $pass_stmt->execute();
-                        $current_hash = $pass_stmt->get_result()->fetch_assoc()['password'];
-                        
+                        $pass_stmt->execute([$user_id]);
+                        $current_hash = $pass_stmt->fetch(PDO::FETCH_ASSOC)['password'];
+
                         if (password_verify($current_password, $current_hash)) {
                             // Update password
                             $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
                             $pass_update = "UPDATE users SET password = ? WHERE user_id = ?";
                             $pass_update_stmt = $conn->prepare($pass_update);
-                            $pass_update_stmt->bind_param("si", $new_hash, $user_id);
-                            
-                            if ($pass_update_stmt->execute()) {
+                            $pass_update_stmt->execute([$new_hash, $user_id]);
+
+                            if ($pass_update_stmt->rowCount() > 0) {
                                 $success_message = "Profile and password updated successfully!";
                             } else {
                                 $error_message = "Profile updated but failed to change password.";
@@ -85,16 +83,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $user_info = getUserInfo($user_id);
 
 // Get user statistics
-$stats_query = "SELECT 
+$stats_query = "SELECT
     COUNT(*) as total_orders,
     SUM(total_price) as total_spent,
-    COUNT(CASE WHEN status = 'Delivered' THEN 1 END) as completed_orders
-    FROM orders 
+    COUNT(CASE WHEN status = 'Delivered' THEN TRUE END) as completed_orders
+    FROM orders
     WHERE user_id = ?";
 $stats_stmt = $conn->prepare($stats_query);
-$stats_stmt->bind_param("i", $user_id);
-$stats_stmt->execute();
-$user_stats = $stats_stmt->get_result()->fetch_assoc();
+$stats_stmt->execute([$user_id]);
+$user_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "My Profile";

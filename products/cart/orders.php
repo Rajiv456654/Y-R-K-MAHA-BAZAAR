@@ -15,16 +15,15 @@ if (isset($_GET['cancel']) && is_numeric($_GET['cancel'])) {
     // Check if order belongs to user and can be cancelled
     $check_query = "SELECT status FROM orders WHERE order_id = ? AND user_id = ?";
     $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ii", $order_id, $user_id);
-    $check_stmt->execute();
-    $order_status = $check_stmt->get_result()->fetch_assoc();
+    $check_stmt->execute([$order_id, $user_id]);
+    $order_status = $check_stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($order_status && in_array($order_status['status'], ['Pending', 'Processing'])) {
         $cancel_query = "UPDATE orders SET status = 'Cancelled' WHERE order_id = ? AND user_id = ?";
         $cancel_stmt = $conn->prepare($cancel_query);
-        $cancel_stmt->bind_param("ii", $order_id, $user_id);
+        $cancel_stmt->execute([$order_id, $user_id]);
         
-        if ($cancel_stmt->execute()) {
+        if ($cancel_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Order #$order_id has been cancelled successfully.";
         } else {
             $_SESSION['error_message'] = "Failed to cancel order. Please try again.";
@@ -45,33 +44,28 @@ $offset = ($page - 1) * $records_per_page;
 // Get total orders count
 $count_query = "SELECT COUNT(*) as total FROM orders WHERE user_id = ?";
 $count_stmt = $conn->prepare($count_query);
-$count_stmt->bind_param("i", $user_id);
-$count_stmt->execute();
-$total_orders = $count_stmt->get_result()->fetch_assoc()['total'];
+$count_stmt->execute([$user_id]);
+$total_orders = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_orders / $records_per_page);
 
 // Get orders
 $orders_query = "SELECT * FROM orders WHERE user_id = ? ORDER BY order_date DESC LIMIT ? OFFSET ?";
 $orders_stmt = $conn->prepare($orders_query);
-$orders_stmt->bind_param("iii", $user_id, $records_per_page, $offset);
-$orders_stmt->execute();
-$orders_result = $orders_stmt->get_result();
-
-// Get order statistics
-$stats_query = "SELECT 
+$orders_stmt->execute([$user_id, $records_per_page, $offset]);
+$orders_result = $orders_stmt->fetchAll(PDO::FETCH_ASSOC);
+$stats_query = "SELECT
     COUNT(*) as total_orders,
     SUM(total_price) as total_spent,
-    COUNT(CASE WHEN status = 'Delivered' THEN 1 END) as delivered_orders,
-    COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending_orders,
-    COUNT(CASE WHEN status = 'Processing' THEN 1 END) as processing_orders,
-    COUNT(CASE WHEN status = 'Shipped' THEN 1 END) as shipped_orders,
-    COUNT(CASE WHEN status = 'Cancelled' THEN 1 END) as cancelled_orders
-    FROM orders 
+    COUNT(CASE WHEN status = 'Delivered' THEN TRUE END) as delivered_orders,
+    COUNT(CASE WHEN status = 'Pending' THEN TRUE END) as pending_orders,
+    COUNT(CASE WHEN status = 'Processing' THEN TRUE END) as processing_orders,
+    COUNT(CASE WHEN status = 'Shipped' THEN TRUE END) as shipped_orders,
+    COUNT(CASE WHEN status = 'Cancelled' THEN TRUE END) as cancelled_orders
+    FROM orders
     WHERE user_id = ?";
 $stats_stmt = $conn->prepare($stats_query);
-$stats_stmt->bind_param("i", $user_id);
-$stats_stmt->execute();
-$order_stats = $stats_stmt->get_result()->fetch_assoc();
+$stats_stmt->execute([$user_id]);
+$order_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "My Orders";
@@ -190,9 +184,9 @@ include '../../includes/header.php';
     </div>
 
     <!-- Orders List -->
-    <?php if ($orders_result->num_rows > 0): ?>
+    <?php if (count($orders_result) > 0): ?>
     <div class="orders-container">
-        <?php while ($order = $orders_result->fetch_assoc()): ?>
+        <?php foreach ($orders_result as $order): ?>
         <div class="order-card mb-4">
             <div class="order-header">
                 <div class="row align-items-center">
@@ -287,7 +281,7 @@ include '../../includes/header.php';
                 </div>
             </div>
         </div>
-        <?php endwhile; ?>
+        <?php endforeach; ?>
     </div>
 
     <!-- Pagination -->
