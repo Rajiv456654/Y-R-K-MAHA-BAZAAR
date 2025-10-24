@@ -19,9 +19,8 @@ $query = "SELECT c.*, p.name, p.price, p.image, p.stock
           WHERE c.user_id = ? 
           ORDER BY c.added_at DESC";
 $stmt = $conn->prepare($query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$cart_items = $stmt->get_result();
+$stmt->execute([$user_id]);
+$cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate totals
 $subtotal = 0;
@@ -44,7 +43,7 @@ $total_items = 0;
         </div>
     </div>
 
-    <?php if ($cart_items->num_rows > 0): ?>
+    <?php if (count($cart_items) > 0): ?>
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
@@ -52,7 +51,7 @@ $total_items = 0;
                     <h5 class="mb-0">Cart Items</h5>
                 </div>
                 <div class="card-body">
-                    <?php while ($item = $cart_items->fetch_assoc()): 
+                    <?php foreach ($cart_items as $item):
                         $item_total = $item['price'] * $item['quantity'];
                         $subtotal += $item_total;
                         $total_items += $item['quantity'];
@@ -60,8 +59,8 @@ $total_items = 0;
                     <div class="cart-item" data-product-id="<?php echo $item['product_id']; ?>">
                         <div class="row align-items-center">
                             <div class="col-md-2">
-                                <img src="../../assets/images/products/<?php echo $item['image'] ?: 'default-product.jpg'; ?>" 
-                                     alt="<?php echo htmlspecialchars($item['name']); ?>" 
+                                <img src="../../assets/images/products/<?php echo $item['image'] ?: 'default-product.jpg'; ?>"
+                                     alt="<?php echo htmlspecialchars($item['name']); ?>"
                                      class="img-fluid rounded" style="max-height: 80px;">
                             </div>
                             <div class="col-md-4">
@@ -74,8 +73,8 @@ $total_items = 0;
                                     <button type="button" class="btn-quantity" onclick="updateQuantity(<?php echo $item['product_id']; ?>, -1)">
                                         <i class="fas fa-minus"></i>
                                     </button>
-                                    <input type="number" class="quantity-input" value="<?php echo $item['quantity']; ?>" 
-                                           min="1" max="<?php echo $item['stock']; ?>" 
+                                    <input type="number" class="quantity-input" value="<?php echo $item['quantity']; ?>"
+                                           min="1" max="<?php echo $item['stock']; ?>"
                                            onchange="updateQuantity(<?php echo $item['product_id']; ?>, 0, this.value)">
                                     <button type="button" class="btn-quantity" onclick="updateQuantity(<?php echo $item['product_id']; ?>, 1)">
                                         <i class="fas fa-plus"></i>
@@ -88,14 +87,14 @@ $total_items = 0;
                                 </div>
                             </div>
                             <div class="col-md-1">
-                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                <button type="button" class="btn btn-outline-danger btn-sm"
                                         onclick="removeFromCart(<?php echo $item['product_id']; ?>)">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </div>
             </div>
             
@@ -151,31 +150,30 @@ $total_items = 0;
                 <div class="card-body">
                     <?php
                     // Get recommended products
-                    $rec_query = "SELECT product_id, name, price, image FROM products 
-                                  WHERE is_active = 1 AND product_id NOT IN 
-                                  (SELECT product_id FROM cart WHERE user_id = ?) 
+                    $rec_query = "SELECT product_id, name, price, image FROM products
+                                  WHERE is_active = TRUE AND product_id NOT IN
+                                  (SELECT product_id FROM cart WHERE user_id = ?)
                                   ORDER BY RAND() LIMIT 3";
                     $rec_stmt = $conn->prepare($rec_query);
-                    $rec_stmt->bind_param("i", $user_id);
-                    $rec_stmt->execute();
-                    $recommended = $rec_stmt->get_result();
-                    
-                    while ($product = $recommended->fetch_assoc()):
+                    $rec_stmt->execute([$user_id]);
+                    $recommended = $rec_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($recommended as $product):
                     ?>
                     <div class="d-flex align-items-center mb-3">
-                        <img src="../../assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>" 
-                             alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                        <img src="../../assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>"
+                             alt="<?php echo htmlspecialchars($product['name']); ?>"
                              class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
                         <div class="flex-grow-1">
                             <h6 class="mb-0 small"><?php echo htmlspecialchars($product['name']); ?></h6>
                             <small class="text-primary"><?php echo formatPrice($product['price']); ?></small>
                         </div>
-                        <button class="btn btn-outline-primary btn-sm" 
+                        <button class="btn btn-outline-primary btn-sm"
                                 onclick="addToCart(<?php echo $product['product_id']; ?>, 1)">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
