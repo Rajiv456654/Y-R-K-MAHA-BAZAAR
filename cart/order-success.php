@@ -15,32 +15,30 @@ if ($order_id <= 0) {
 }
 
 // Get order details
-$order_query = "SELECT o.*, COUNT(oi.item_id) as item_count 
-                FROM orders o 
-                LEFT JOIN order_items oi ON o.order_id = oi.order_id 
-                WHERE o.order_id = ? AND o.user_id = ? 
-                GROUP BY o.order_id";
+$order_query = "SELECT o.order_id, o.customer_name, o.customer_email, o.customer_phone, o.total_price, o.status, o.order_date, o.payment_method, o.shipping_address, COUNT(oi.item_id) as item_count
+                FROM orders o
+                LEFT JOIN order_items oi ON o.order_id = oi.order_id
+                WHERE o.order_id = ? AND o.user_id = ?
+                GROUP BY o.order_id, o.customer_name, o.customer_email, o.customer_phone, o.total_price, o.status, o.order_date, o.payment_method, o.shipping_address";
 $order_stmt = $conn->prepare($order_query);
-$order_stmt->bind_param("ii", $order_id, $_SESSION['user_id']);
-$order_stmt->execute();
-$order_result = $order_stmt->get_result();
+$order_stmt->execute([$order_id, $_SESSION['user_id']]);
+$order_result = $order_stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($order_result->num_rows == 0) {
+if (!$order_result) {
     header("Location: ../index.php");
     exit();
 }
 
-$order = $order_result->fetch_assoc();
+$order = $order_result;
 
 // Get order items
-$items_query = "SELECT oi.*, p.name, p.image 
-                FROM order_items oi 
-                JOIN products p ON oi.product_id = p.product_id 
+$items_query = "SELECT oi.*, p.name, p.image
+                FROM order_items oi
+                JOIN products p ON oi.product_id = p.product_id
                 WHERE oi.order_id = ?";
 $items_stmt = $conn->prepare($items_query);
-$items_stmt->bind_param("i", $order_id);
-$items_stmt->execute();
-$items_result = $items_stmt->get_result();
+$items_stmt->execute([$order_id]);
+$items_result = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "Order Success";
@@ -103,10 +101,10 @@ include '../includes/header.php';
                     <h5 class="mb-0"><i class="fas fa-box me-2"></i>Order Items (<?php echo $order['item_count']; ?>)</h5>
                 </div>
                 <div class="card-body p-0">
-                    <?php while ($item = $items_result->fetch_assoc()): ?>
+                    <?php foreach ($items_result as $item): ?>
                     <div class="d-flex align-items-center p-3 border-bottom">
-                        <img src="../assets/images/products/<?php echo $item['image'] ?: 'default-product.jpg'; ?>" 
-                             class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;" 
+                        <img src="../assets/images/products/<?php echo $item['image'] ?: 'default-product.jpg'; ?>"
+                             class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;"
                              alt="<?php echo htmlspecialchars($item['name']); ?>">
                         <div class="flex-grow-1">
                             <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
@@ -118,7 +116,7 @@ include '../includes/header.php';
                             <strong><?php echo formatPrice($item['quantity'] * $item['price']); ?></strong>
                         </div>
                     </div>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </div>
             </div>
 

@@ -89,10 +89,10 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 }
 
 // Get categories with product count
-$categories_query = "SELECT c.*, COUNT(p.product_id) as product_count
+$categories_query = "SELECT c.category_id, c.category_name, c.description, c.created_at, COUNT(p.product_id) as product_count
                      FROM categories c
                      LEFT JOIN products p ON c.category_id = p.category_id
-                     GROUP BY c.category_id
+                     GROUP BY c.category_id, c.category_name, c.description, c.created_at
                      ORDER BY c.category_name";
 $categories_stmt = $conn->prepare($categories_query);
 $categories_stmt->execute();

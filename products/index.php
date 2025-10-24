@@ -5,28 +5,34 @@ require_once '../includes/functions.php';
 startSession();
 
 // Get featured products
-$featured_query = "SELECT p.*, c.category_name FROM products p 
-                   JOIN categories c ON p.category_id = c.category_id 
-                   WHERE p.is_active = 1 
-                   ORDER BY p.created_at DESC 
+$featured_query = "SELECT p.*, c.category_name FROM products p
+                   JOIN categories c ON p.category_id = c.category_id
+                   WHERE p.is_active = TRUE
+                   ORDER BY p.created_at DESC
                    LIMIT 8";
-$featured_products = $conn->query($featured_query);
+$featured_stmt = $conn->prepare($featured_query);
+$featured_stmt->execute();
+$featured_products = $featured_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get categories with product counts
-$cat_query = "SELECT c.*, COUNT(p.product_id) as product_count 
-              FROM categories c 
-              LEFT JOIN products p ON c.category_id = p.category_id AND p.is_active = 1 
-              GROUP BY c.category_id 
+$cat_query = "SELECT c.category_id, c.category_name, c.description, c.created_at, COUNT(p.product_id) as product_count
+              FROM categories c
+              LEFT JOIN products p ON c.category_id = p.category_id AND p.is_active = TRUE
+              GROUP BY c.category_id, c.category_name, c.description, c.created_at
               ORDER BY c.category_name";
-$categories = $conn->query($cat_query);
+$cat_stmt = $conn->prepare($cat_query);
+$cat_stmt->execute();
+$categories = $cat_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get statistics
-$stats_query = "SELECT 
-                (SELECT COUNT(*) FROM products WHERE is_active = 1) as total_products,
+$stats_query = "SELECT
+                (SELECT COUNT(*) FROM products WHERE is_active = TRUE) as total_products,
                 (SELECT COUNT(*) FROM categories) as total_categories,
-                (SELECT COUNT(*) FROM users WHERE is_active = 1) as total_users,
+                (SELECT COUNT(*) FROM users WHERE is_active = TRUE) as total_users,
                 (SELECT COUNT(*) FROM orders WHERE status = 'Delivered') as total_orders";
-$stats = $conn->query($stats_query)->fetch_assoc();
+$stats_stmt = $conn->prepare($stats_query);
+$stats_stmt->execute();
+$stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "Products Hub - Discover Amazing Deals";
@@ -162,17 +168,17 @@ include '../includes/header.php';
             </div>
         </div>
         
-        <?php if ($categories->num_rows > 0): ?>
-            <?php while ($category = $categories->fetch_assoc()): ?>
+        <?php if (count($categories) > 0): ?>
+            <?php foreach ($categories as $category): ?>
             <div class="col-lg-4 col-md-6 mb-4">
                 <a href="product-list.php?category=<?php echo $category['category_id']; ?>" class="text-decoration-none">
                     <div class="category-card">
                         <div class="category-content">
                             <div class="category-icon">
-                                <?php 
+                                <?php
                                 $icons = [
                                     'Electronics' => '💻',
-                                    'Clothing' => '👕', 
+                                    'Clothing' => '👕',
                                     'Home & Garden' => '🏠',
                                     'Books' => '📚',
                                     'Sports' => '⚽',
@@ -195,7 +201,7 @@ include '../includes/header.php';
                     </div>
                 </a>
             </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         <?php else: ?>
         <div class="col-12">
             <div class="text-center py-5">
@@ -220,12 +226,12 @@ include '../includes/header.php';
             </div>
         </div>
         
-        <?php if ($featured_products->num_rows > 0): ?>
-            <?php while ($product = $featured_products->fetch_assoc()): ?>
+        <?php if (count($featured_products) > 0): ?>
+            <?php foreach ($featured_products as $product): ?>
             <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                 <div class="card product-card h-100 shadow-hover border-0">
                     <div class="position-relative overflow-hidden">
-                        <img src="../assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>" 
+                        <img src="../assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>"
                              class="card-img-top product-image" alt="<?php echo htmlspecialchars($product['name']); ?>">
                         
                         <?php if ($product['stock'] <= 5 && $product['stock'] > 0): ?>
@@ -244,7 +250,7 @@ include '../includes/header.php';
                         
                         <div class="product-overlay">
                             <div class="overlay-content">
-                                <a href="product-detail.php?id=<?php echo $product['product_id']; ?>" 
+                                <a href="product-detail.php?id=<?php echo $product['product_id']; ?>"
                                    class="btn btn-light btn-sm rounded-pill">
                                     👁️ Quick View
                                 </a>
@@ -265,12 +271,12 @@ include '../includes/header.php';
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <a href="product-detail.php?id=<?php echo $product['product_id']; ?>" 
+                            <a href="product-detail.php?id=<?php echo $product['product_id']; ?>"
                                class="btn btn-outline-primary btn-sm">
                                 View Details
                             </a>
                             <?php if ($product['stock'] > 0): ?>
-                            <button class="btn btn-primary btn-sm" 
+                            <button class="btn btn-primary btn-sm"
                                     onclick="addToCart(<?php echo $product['product_id']; ?>, 1)">
                                 Add to Cart
                             </button>
@@ -283,7 +289,7 @@ include '../includes/header.php';
                     </div>
                 </div>
             </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         <?php else: ?>
         <div class="col-12">
             <div class="text-center py-5">

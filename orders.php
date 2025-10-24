@@ -20,12 +20,12 @@ $total_orders = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_orders / $records_per_page);
 
 // Get orders
-$orders_query = "SELECT o.*, COUNT(oi.item_id) as item_count 
-                 FROM orders o 
-                 LEFT JOIN order_items oi ON o.order_id = oi.order_id 
-                 WHERE o.user_id = ? 
-                 GROUP BY o.order_id 
-                 ORDER BY o.order_date DESC 
+$orders_query = "SELECT o.order_id, o.customer_name, o.customer_email, o.customer_phone, o.total_price, o.status, o.order_date, o.payment_method, o.shipping_address, COUNT(oi.item_id) as item_count
+                 FROM orders o
+                 LEFT JOIN order_items oi ON o.order_id = oi.order_id
+                 WHERE o.user_id = ?
+                 GROUP BY o.order_id, o.customer_name, o.customer_email, o.customer_phone, o.total_price, o.status, o.order_date, o.payment_method, o.shipping_address
+                 ORDER BY o.order_date DESC
                  LIMIT ? OFFSET ?";
 $orders_stmt = $conn->prepare($orders_query);
 $orders_stmt->execute([$user_id, $records_per_page, $offset]);

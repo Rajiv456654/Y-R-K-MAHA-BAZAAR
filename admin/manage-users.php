@@ -86,13 +86,13 @@ $total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Get users with order statistics
-$query = "SELECT u.*,
+$query = "SELECT u.user_id, u.name, u.email, u.phone, u.address, u.is_active, u.created_at,
           COUNT(DISTINCT o.order_id) as total_orders,
           COALESCE(SUM(CASE WHEN o.status != 'Cancelled' THEN o.total_price ELSE 0 END), 0) as total_spent
           FROM users u
           LEFT JOIN orders o ON u.user_id = o.user_id
           WHERE $where_clause
-          GROUP BY u.user_id
+          GROUP BY u.user_id, u.name, u.email, u.phone, u.address, u.is_active, u.created_at
           ORDER BY u.created_at DESC
           LIMIT ? OFFSET ?";
 

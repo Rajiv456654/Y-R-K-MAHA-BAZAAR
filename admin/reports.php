@@ -69,7 +69,7 @@ $category_query = "SELECT
     JOIN categories c ON p.category_id = c.category_id
     JOIN orders o ON oi.order_id = o.order_id
     WHERE o.order_date BETWEEN ? AND ?
-    GROUP BY c.category_id
+    GROUP BY c.category_id, c.category_name
     ORDER BY revenue DESC";
 $category_stmt = $conn->prepare($category_query);
 $category_stmt->execute([$start_date, $end_date]);
@@ -88,7 +88,7 @@ $customer_stmt->execute([$start_date, $end_date]);
 $customer_data = $customer_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Top customers
-$top_customers_query = "SELECT 
+$top_customers_query = "SELECT
     u.name,
     u.email,
     COUNT(o.order_id) as total_orders,
@@ -96,7 +96,7 @@ $top_customers_query = "SELECT
     FROM orders o
     JOIN users u ON o.user_id = u.user_id
     WHERE o.order_date BETWEEN ? AND ?
-    GROUP BY o.user_id
+    GROUP BY o.user_id, u.name, u.email
     ORDER BY total_spent DESC
     LIMIT 10";
 $top_customers_stmt = $conn->prepare($top_customers_query);

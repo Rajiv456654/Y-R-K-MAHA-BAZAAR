@@ -56,13 +56,13 @@ while ($row = $status_stmt->fetch(PDO::FETCH_ASSOC)) {
 
 // Monthly sales data (last 6 months)
 $monthly_sales_query = "SELECT
-                        DATE_FORMAT(order_date, '%Y-%m') as month,
+                        DATE_TRUNC('month', order_date) as month,
                         SUM(total_price) as sales,
                         COUNT(*) as orders
                         FROM orders
-                        WHERE order_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                        WHERE order_date >= NOW() - INTERVAL '6 MONTH'
                         AND status != 'Cancelled'
-                        GROUP BY DATE_FORMAT(order_date, '%Y-%m')
+                        GROUP BY DATE_TRUNC('month', order_date)
                         ORDER BY month DESC";
 $monthly_sales_stmt = $conn->prepare($monthly_sales_query);
 $monthly_sales_stmt->execute();
@@ -273,7 +273,7 @@ function getStatusColor($status) {
 $monthly_labels = [];
 $monthly_sales = [];
 foreach (array_reverse($monthly_data) as $data) {
-    $monthly_labels[] = date('M Y', strtotime($data['month'] . '-01'));
+    $monthly_labels[] = date('M Y', strtotime($data['month']));
     $monthly_sales[] = $data['sales'];
 }
 
