@@ -42,7 +42,7 @@ $daily_stmt->execute([$start_date, $end_date]);
 $daily_sales = $daily_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Top selling products
-$top_products_query = "SELECT 
+$top_products_query = "SELECT
     p.name,
     p.price,
     SUM(oi.quantity) as total_sold,
@@ -51,7 +51,7 @@ $top_products_query = "SELECT
     JOIN products p ON oi.product_id = p.product_id
     JOIN orders o ON oi.order_id = o.order_id
     WHERE o.order_date BETWEEN ? AND ?
-    GROUP BY oi.product_id
+    GROUP BY oi.product_id, p.name, p.price
     ORDER BY total_sold DESC
     LIMIT 10";
 $top_products_stmt = $conn->prepare($top_products_query);
@@ -441,9 +441,10 @@ include 'includes/admin-header.php';
                     <tbody>
                         <?php
                         $max_spent = 0;
-                        $stmt = $pdo->prepare("SELECT * FROM customers ORDER BY total_spent DESC");
-                        $stmt->execute();
-                        $customers_array = $stmt->fetchAll();
+                        $customers_query = "SELECT * FROM customers ORDER BY total_spent DESC";
+                        $customers_stmt = $conn->prepare($customers_query);
+                        $customers_stmt->execute();
+                        $customers_array = $customers_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                         foreach ($customers_array as $customer) {
                             if ($customer['total_spent'] > $max_spent) {

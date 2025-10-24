@@ -387,7 +387,7 @@ $page_title = "Admin Dashboard";
                     <div class="stat-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="stat-number text-primary"><?php echo number_format($stats['total_products']); ?></div>
+                                <div class="stat-number text-primary"><?php echo number_format($stats['total_products'] ?? 0); ?></div>
                                 <div class="stat-label">Total Products</div>
                             </div>
                             <div class="stat-icon text-primary">
@@ -401,7 +401,7 @@ $page_title = "Admin Dashboard";
                     <div class="stat-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="stat-number text-success"><?php echo number_format($stats['total_orders']); ?></div>
+                                <div class="stat-number text-success"><?php echo number_format($stats['total_orders'] ?? 0); ?></div>
                                 <div class="stat-label">Total Orders</div>
                             </div>
                             <div class="stat-icon text-success">
@@ -415,7 +415,7 @@ $page_title = "Admin Dashboard";
                     <div class="stat-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="stat-number text-info"><?php echo number_format($stats['total_users']); ?></div>
+                                <div class="stat-number text-info"><?php echo number_format($stats['total_users'] ?? 0); ?></div>
                                 <div class="stat-label">Total Customers</div>
                             </div>
                             <div class="stat-icon text-info">
@@ -487,7 +487,7 @@ $page_title = "Admin Dashboard";
                                     <tr>
                                         <td class="fw-bold">#<?php echo $order['order_id']; ?></td>
                                         <td><?php echo htmlspecialchars($order['customer_name']); ?></td>
-                                        <td class="fw-bold text-success">₹<?php echo number_format($order['total_price']); ?></td>
+                                        <td class="fw-bold text-success">₹<?php echo number_format($order['total_price'] ?? 0); ?></td>
                                         <td>
                                             <span class="badge badge-status bg-<?php
                                                 echo $order['status'] == 'Delivered' ? 'success' :

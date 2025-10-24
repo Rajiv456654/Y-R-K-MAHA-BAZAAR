@@ -138,7 +138,7 @@ $subjects_result = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>Total Messages</h6>
-                        <h3><?php echo number_format($stats['total_messages']); ?></h3>
+                        <h3><?php echo number_format($stats['total_messages'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-envelope fa-2x opacity-75"></i>
                 </div>
@@ -152,7 +152,7 @@ $subjects_result = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>Unread</h6>
-                        <h3><?php echo number_format($stats['unread_messages']); ?></h3>
+                        <h3><?php echo number_format($stats['unread_messages'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-envelope-open fa-2x opacity-75"></i>
                 </div>
@@ -166,7 +166,7 @@ $subjects_result = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>Read</h6>
-                        <h3><?php echo number_format($stats['read_messages']); ?></h3>
+                        <h3><?php echo number_format($stats['read_messages'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-check-circle fa-2x opacity-75"></i>
                 </div>
@@ -180,7 +180,7 @@ $subjects_result = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>This Week</h6>
-                        <h3><?php echo number_format($stats['recent_messages']); ?></h3>
+                        <h3><?php echo number_format($stats['recent_messages'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-calendar-week fa-2x opacity-75"></i>
                 </div>

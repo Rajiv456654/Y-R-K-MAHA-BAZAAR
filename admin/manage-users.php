@@ -55,9 +55,9 @@ if (!empty($search)) {
 }
 
 if ($status_filter === 'active') {
-    $where_conditions[] = "u.is_active = 1";
+    $where_conditions[] = "u.is_active = TRUE";
 } elseif ($status_filter === 'inactive') {
-    $where_conditions[] = "u.is_active = 0";
+    $where_conditions[] = "u.is_active = FALSE";
 }
 
 if (!empty($date_from)) {
