@@ -15,9 +15,8 @@ $offset = ($page - 1) * $records_per_page;
 // Get total orders count
 $count_query = "SELECT COUNT(*) as total FROM orders WHERE user_id = ?";
 $count_stmt = $conn->prepare($count_query);
-$count_stmt->bind_param("i", $user_id);
-$count_stmt->execute();
-$total_orders = $count_stmt->get_result()->fetch_assoc()['total'];
+$count_stmt->execute([$user_id]);
+$total_orders = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_orders / $records_per_page);
 
 // Get orders
@@ -29,9 +28,9 @@ $orders_query = "SELECT o.*, COUNT(oi.item_id) as item_count
                  ORDER BY o.order_date DESC 
                  LIMIT ? OFFSET ?";
 $orders_stmt = $conn->prepare($orders_query);
-$orders_stmt->bind_param("iii", $user_id, $records_per_page, $offset);
-$orders_stmt->execute();
-$orders_result = $orders_stmt->get_result();
+$orders_stmt->execute([$user_id, $records_per_page, $offset]);
+$orders_result = $orders_stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <div class="container py-4">
@@ -47,11 +46,11 @@ $orders_result = $orders_stmt->get_result();
         </div>
     </div>
 
-    <?php if ($orders_result->num_rows > 0): ?>
+    <?php if (count($orders_result) > 0): ?>
     <!-- Orders List -->
     <div class="row">
         <div class="col-12">
-            <?php while ($order = $orders_result->fetch_assoc()): ?>
+            <?php foreach ($orders_result as $order): ?>
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-light">
                     <div class="row align-items-center">
@@ -130,9 +129,8 @@ $orders_result = $orders_stmt->get_result();
                                                JOIN products p ON oi.product_id = p.product_id 
                                                WHERE oi.order_id = ?";
                                 $items_stmt = $conn->prepare($items_query);
-                                $items_stmt->bind_param("i", $order['order_id']);
-                                $items_stmt->execute();
-                                $items_result = $items_stmt->get_result();
+                                $items_stmt->execute([$order['order_id']]);
+                                $items_result = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 ?>
                                 
                                 <div class="table-responsive">
@@ -146,12 +144,12 @@ $orders_result = $orders_stmt->get_result();
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php while ($item = $items_result->fetch_assoc()): ?>
+                                            <?php foreach ($items_result as $item): ?>
                                             <tr>
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <img src="assets/images/products/<?php echo $item['image'] ?: 'default-product.jpg'; ?>" 
-                                                             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;" 
+                                                        <img src="assets/images/products/<?php echo $item['image'] ?: 'default-product.jpg'; ?>"
+                                                             class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;"
                                                              alt="<?php echo htmlspecialchars($item['name']); ?>">
                                                         <span><?php echo htmlspecialchars($item['name']); ?></span>
                                                     </div>
@@ -160,7 +158,7 @@ $orders_result = $orders_stmt->get_result();
                                                 <td><?php echo $item['quantity']; ?></td>
                                                 <td><?php echo formatPrice($item['price'] * $item['quantity']); ?></td>
                                             </tr>
-                                            <?php endwhile; ?>
+                                            <?php endforeach; ?>
                                         </tbody>
                                     </table>
                                 </div>
@@ -186,7 +184,7 @@ $orders_result = $orders_stmt->get_result();
                     </div>
                 </div>
             </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </div>
     </div>
 
