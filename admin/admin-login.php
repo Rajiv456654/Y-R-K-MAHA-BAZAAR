@@ -21,17 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Check admin credentials
         $query = "SELECT admin_id, username, password FROM admin WHERE username = ?";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows == 1) {
-            $admin = $result->fetch_assoc();
-            
-            if (password_verify($password, $admin['password'])) {
+        $stmt->execute([$username]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result) {
+            if (password_verify($password, $result['password'])) {
                 // Login successful
-                $_SESSION['admin_id'] = $admin['admin_id'];
-                $_SESSION['admin_username'] = $admin['username'];
+                $_SESSION['admin_id'] = $result['admin_id'];
+                $_SESSION['admin_username'] = $result['username'];
                 
                 header("Location: index.php");
                 exit();
