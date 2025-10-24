@@ -12,8 +12,11 @@ if (isset($_GET['toggle_status']) && is_numeric($_GET['toggle_status'])) {
     $status_stmt->execute([$user_id]);
     $current_status = $status_stmt->fetch(PDO::FETCH_ASSOC)['is_active'];
 
-    // Toggle status
-    $new_status = $current_status ? FALSE : TRUE;
+    // Convert to proper boolean (PostgreSQL might return string 't'/'f' or 1/0)
+    $current_status_bool = (bool)$current_status;
+
+    // Toggle status using proper PostgreSQL boolean keywords
+    $new_status = $current_status_bool ? FALSE : TRUE;
     $update_query = "UPDATE users SET is_active = ? WHERE user_id = ?";
     $update_stmt = $conn->prepare($update_query);
     $update_stmt->execute([$new_status, $user_id]);
@@ -140,7 +143,7 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>Total Users</h6>
-                        <h3><?php echo number_format($stats['total_users']); ?></h3>
+                        <h3><?php echo number_format($stats['total_users'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-users fa-2x opacity-75"></i>
                 </div>
@@ -154,7 +157,7 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>Active Users</h6>
-                        <h3><?php echo number_format($stats['active_users']); ?></h3>
+                        <h3><?php echo number_format($stats['active_users'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-user-check fa-2x opacity-75"></i>
                 </div>
@@ -168,7 +171,7 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>Inactive Users</h6>
-                        <h3><?php echo number_format($stats['inactive_users']); ?></h3>
+                        <h3><?php echo number_format($stats['inactive_users'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-user-times fa-2x opacity-75"></i>
                 </div>
@@ -182,7 +185,7 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <h6>New Users (30d)</h6>
-                        <h3><?php echo number_format($stats['new_users']); ?></h3>
+                        <h3><?php echo number_format($stats['new_users'] ?? 0); ?></h3>
                     </div>
                     <i class="fas fa-user-plus fa-2x opacity-75"></i>
                 </div>
@@ -283,7 +286,7 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-info"><?php echo $user['total_orders']; ?> orders</span>
                         </td>
                         <td>
-                            <strong><?php echo formatPrice($user['total_spent']); ?></strong>
+                            <strong><?php echo formatPrice($user['total_spent'] ?? 0); ?></strong>
                         </td>
                         <td>
                             <span class="badge bg-<?php echo $user['is_active'] ? 'success' : 'danger'; ?>">
@@ -342,7 +345,7 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             <?php foreach ($recent_orders_result as $order): ?>
                                             <li class="mb-1">
                                                 <strong>#<?php echo $order['order_id']; ?></strong> - 
-                                                <?php echo formatPrice($order['total_price']); ?>
+                                                <?php echo formatPrice($order['total_price'] ?? 0); ?>
                                                 <span class="badge bg-<?php echo getOrderStatusColor($order['status']); ?> ms-1">
                                                     <?php echo $order['status']; ?>
                                                 </span>

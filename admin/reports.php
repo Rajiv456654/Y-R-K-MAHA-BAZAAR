@@ -76,16 +76,21 @@ $category_stmt->execute([$start_date, $end_date]);
 $category_data = $category_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Customer insights
-$customer_query = "SELECT 
+$customer_query = "SELECT
     COUNT(DISTINCT user_id) as total_customers,
-    COUNT(*) / COUNT(DISTINCT user_id) as avg_orders_per_customer,
+    COUNT(*) as total_orders,
     MAX(total_price) as highest_order,
     MIN(total_price) as lowest_order
-    FROM orders 
+    FROM orders
     WHERE order_date BETWEEN ? AND ?";
 $customer_stmt = $conn->prepare($customer_query);
 $customer_stmt->execute([$start_date, $end_date]);
 $customer_data = $customer_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Calculate average orders per customer safely (prevent division by zero)
+$customer_data['avg_orders_per_customer'] = ($customer_data['total_customers'] > 0)
+    ? $customer_data['total_orders'] / $customer_data['total_customers']
+    : 0;
 
 // Top customers
 $top_customers_query = "SELECT
@@ -401,7 +406,7 @@ include 'includes/admin-header.php';
                                 <strong><?php echo htmlspecialchars($product['name']); ?></strong>
                             </td>
                             <td><?php echo $product['total_sold']; ?> units</td>
-                            <td><?php echo formatPrice($product['total_revenue']); ?></td>
+                            <td><?php echo formatPrice($product['total_revenue'] ?? 0); ?></td>
                             <td>
                                 <div class="progress progress-modern">
                                     <div class="progress-bar bg-success" style="width: <?php echo $percentage; ?>%"></div>
@@ -441,7 +446,11 @@ include 'includes/admin-header.php';
                     <tbody>
                         <?php
                         $max_spent = 0;
-                        $customers_query = "SELECT * FROM customers ORDER BY total_spent DESC";
+                        $customers_query = "SELECT u.user_id, u.name, u.email, COUNT(o.order_id) as total_orders, COALESCE(SUM(o.total_price), 0) as total_spent
+                                          FROM users u
+                                          LEFT JOIN orders o ON u.user_id = o.user_id
+                                          GROUP BY u.user_id, u.name, u.email
+                                          ORDER BY total_spent DESC";
                         $customers_stmt = $conn->prepare($customers_query);
                         $customers_stmt->execute();
                         $customers_array = $customers_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -461,7 +470,7 @@ include 'includes/admin-header.php';
                                 <small class="text-muted"><?php echo htmlspecialchars($customer['email']); ?></small>
                             </td>
                             <td><?php echo $customer['total_orders']; ?></td>
-                            <td><?php echo formatPrice($customer['total_spent']); ?></td>
+                            <td><?php echo formatPrice($customer['total_spent'] ?? 0); ?></td>
                             <td>
                                 <div class="progress progress-modern">
                                     <div class="progress-bar bg-primary" style="width: <?php echo $percentage; ?>%"></div>
@@ -518,7 +527,7 @@ include 'includes/admin-header.php';
                             <td><strong><?php echo htmlspecialchars($category['category_name']); ?></strong></td>
                             <td><?php echo $category['orders']; ?></td>
                             <td><?php echo $category['items_sold']; ?> units</td>
-                            <td><?php echo formatPrice($category['revenue']); ?></td>
+                            <td><?php echo formatPrice($category['revenue'] ?? 0); ?></td>
                             <td>
                                 <div class="progress progress-modern">
                                     <div class="progress-bar bg-info" style="width: <?php echo $percentage; ?>%"></div>
