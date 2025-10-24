@@ -54,42 +54,37 @@ function getCartCount() {
     if (!isLoggedIn()) {
         return 0;
     }
-    
+
     global $conn;
     $user_id = $_SESSION['user_id'];
     $query = "SELECT SUM(quantity) as total FROM cart WHERE user_id = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    
-    return $row['total'] ? $row['total'] : 0;
+    $stmt->execute([$user_id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return $result['total'] ? $result['total'] : 0;
 }
 
 // Add product to cart
 function addToCart($user_id, $product_id, $quantity = 1) {
     global $conn;
-    
+
     // Check if product already in cart
     $check_query = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?";
     $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ii", $user_id, $product_id);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result();
-    
-    if ($result->num_rows > 0) {
+    $check_stmt->execute([$user_id, $product_id]);
+    $result = $check_stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($result) {
         // Update quantity
         $update_query = "UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iii", $quantity, $user_id, $product_id);
-        return $update_stmt->execute();
+        return $update_stmt->execute([$quantity, $user_id, $product_id]);
     } else {
         // Insert new item
         $insert_query = "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("iii", $user_id, $product_id, $quantity);
-        return $insert_stmt->execute();
+        return $insert_stmt->execute([$user_id, $product_id, $quantity]);
     }
 }
 
@@ -146,23 +141,21 @@ function getUserInfo($user_id) {
     global $conn;
     $query = "SELECT * FROM users WHERE user_id = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    return $result->fetch_assoc();
+    $stmt->execute([$user_id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result;
 }
 
 // Get product info by ID
 function getProductInfo($product_id) {
     global $conn;
-    $query = "SELECT p.*, c.category_name FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.category_id 
+    $query = "SELECT p.*, c.category_name FROM products p
+              LEFT JOIN categories c ON p.category_id = c.category_id
               WHERE p.product_id = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $product_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    return $result->fetch_assoc();
+    $stmt->execute([$product_id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result;
 }
 
 // Pagination function
