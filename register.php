@@ -34,11 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Check if email already exists
         $check_query = "SELECT user_id FROM users WHERE email = ?";
         $check_stmt = $conn->prepare($check_query);
-        $check_stmt->bind_param("s", $email);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
+        $check_stmt->execute([$email]);
+        $check_result = $check_stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($check_result->num_rows > 0) {
+        if ($check_result) {
             $error_message = "An account with this email already exists.";
         } else {
             // Hash password and insert user
@@ -46,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             $insert_query = "INSERT INTO users (name, email, password, phone, address) VALUES (?, ?, ?, ?, ?)";
             $insert_stmt = $conn->prepare($insert_query);
-            $insert_stmt->bind_param("sssss", $name, $email, $hashed_password, $phone, $address);
+            $insert_stmt->execute([$name, $email, $hashed_password, $phone, $address]);
             
-            if ($insert_stmt->execute()) {
+            if ($insert_stmt->rowCount() > 0) {
                 $success_message = "Account created successfully! You can now login.";
             } else {
                 $error_message = "An error occurred while creating your account. Please try again.";
