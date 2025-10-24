@@ -6,58 +6,68 @@ include 'includes/admin-header.php';
 $stats = [];
 
 // Total products
-$products_query = "SELECT COUNT(*) as total FROM products WHERE is_active = 1";
-$products_result = $conn->query($products_query);
-$stats['total_products'] = $products_result->fetch_assoc()['total'];
+$products_query = "SELECT COUNT(*) as total FROM products WHERE is_active = TRUE";
+$products_stmt = $conn->prepare($products_query);
+$products_stmt->execute();
+$stats['total_products'] = $products_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
 // Total orders
 $orders_query = "SELECT COUNT(*) as total FROM orders";
-$orders_result = $conn->query($orders_query);
-$stats['total_orders'] = $orders_result->fetch_assoc()['total'];
+$orders_stmt = $conn->prepare($orders_query);
+$orders_stmt->execute();
+$stats['total_orders'] = $orders_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
 // Total users
-$users_query = "SELECT COUNT(*) as total FROM users WHERE is_active = 1";
-$users_result = $conn->query($users_query);
-$stats['total_users'] = $users_result->fetch_assoc()['total'];
+$users_query = "SELECT COUNT(*) as total FROM users WHERE is_active = TRUE";
+$users_stmt = $conn->prepare($users_query);
+$users_stmt->execute();
+$stats['total_users'] = $users_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
 // Total revenue
 $revenue_query = "SELECT SUM(total_price) as total FROM orders WHERE status != 'Cancelled'";
-$revenue_result = $conn->query($revenue_query);
-$stats['total_revenue'] = $revenue_result->fetch_assoc()['total'] ?: 0;
+$revenue_stmt = $conn->prepare($revenue_query);
+$revenue_stmt->execute();
+$stats['total_revenue'] = $revenue_stmt->fetch(PDO::FETCH_ASSOC)['total'] ?: 0;
 
 // Recent orders
-$recent_orders_query = "SELECT o.*, u.name as customer_name 
-                        FROM orders o 
-                        LEFT JOIN users u ON o.user_id = u.user_id 
-                        ORDER BY o.order_date DESC 
+$recent_orders_query = "SELECT o.*, u.name as customer_name
+                        FROM orders o
+                        LEFT JOIN users u ON o.user_id = u.user_id
+                        ORDER BY o.order_date DESC
                         LIMIT 5";
-$recent_orders_result = $conn->query($recent_orders_query);
+$recent_orders_stmt = $conn->prepare($recent_orders_query);
+$recent_orders_stmt->execute();
+$recent_orders_result = $recent_orders_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Low stock products
-$low_stock_query = "SELECT * FROM products WHERE stock <= 5 AND is_active = 1 ORDER BY stock ASC LIMIT 5";
-$low_stock_result = $conn->query($low_stock_query);
+$low_stock_query = "SELECT * FROM products WHERE stock <= 5 AND is_active = TRUE ORDER BY stock ASC LIMIT 5";
+$low_stock_stmt = $conn->prepare($low_stock_query);
+$low_stock_stmt->execute();
+$low_stock_result = $low_stock_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Order status distribution
 $status_query = "SELECT status, COUNT(*) as count FROM orders GROUP BY status";
-$status_result = $conn->query($status_query);
+$status_stmt = $conn->prepare($status_query);
+$status_stmt->execute();
 $order_status = [];
-while ($row = $status_result->fetch_assoc()) {
+while ($row = $status_stmt->fetch(PDO::FETCH_ASSOC)) {
     $order_status[$row['status']] = $row['count'];
 }
 
 // Monthly sales data (last 6 months)
-$monthly_sales_query = "SELECT 
+$monthly_sales_query = "SELECT
                         DATE_FORMAT(order_date, '%Y-%m') as month,
                         SUM(total_price) as sales,
                         COUNT(*) as orders
-                        FROM orders 
+                        FROM orders
                         WHERE order_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
                         AND status != 'Cancelled'
                         GROUP BY DATE_FORMAT(order_date, '%Y-%m')
                         ORDER BY month DESC";
-$monthly_sales_result = $conn->query($monthly_sales_query);
+$monthly_sales_stmt = $conn->prepare($monthly_sales_query);
+$monthly_sales_stmt->execute();
 $monthly_data = [];
-while ($row = $monthly_sales_result->fetch_assoc()) {
+while ($row = $monthly_sales_stmt->fetch(PDO::FETCH_ASSOC)) {
     $monthly_data[] = $row;
 }
 ?>
@@ -190,8 +200,8 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if ($recent_orders_result->num_rows > 0): ?>
-                                <?php while ($order = $recent_orders_result->fetch_assoc()): ?>
+                            <?php if (count($recent_orders_result) > 0): ?>
+                                <?php foreach ($recent_orders_result as $order): ?>
                                 <tr>
                                     <td>#<?php echo $order['order_id']; ?></td>
                                     <td><?php echo htmlspecialchars($order['customer_name'] ?: $order['customer_name']); ?></td>
@@ -203,7 +213,7 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
                                         </span>
                                     </td>
                                 </tr>
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
                             <?php else: ?>
                             <tr>
                                 <td colspan="5" class="text-center text-muted py-3">No recent orders</td>
@@ -225,8 +235,8 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
-                    <?php if ($low_stock_result->num_rows > 0): ?>
-                        <?php while ($product = $low_stock_result->fetch_assoc()): ?>
+                    <?php if (count($low_stock_result) > 0): ?>
+                        <?php foreach ($low_stock_result as $product): ?>
                         <div class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="mb-1"><?php echo htmlspecialchars($product['name']); ?></h6>
@@ -234,7 +244,7 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
                             </div>
                             <span class="badge bg-warning rounded-pill"><?php echo $product['stock']; ?></span>
                         </div>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                     <div class="list-group-item text-center text-muted">
                         All products are well stocked

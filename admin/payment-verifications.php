@@ -25,8 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Update order status to confirmed
                 $update_order = "UPDATE orders SET payment_status = 'Confirmed', payment_verified_at = NOW(), payment_verified_by = ?, status = 'Processing' WHERE order_id = ?";
                 $update_stmt = $conn->prepare($update_order);
-                $update_stmt->bind_param("ii", $admin_id, $order_id);
-                $update_stmt->execute();
+                $update_stmt->execute([$admin_id, $order_id]);
 
                 // Update product stock for approved orders
                 $stock_query = "UPDATE products p
@@ -34,8 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                SET p.stock = p.stock - oi.quantity
                                WHERE oi.order_id = ?";
                 $stock_stmt = $conn->prepare($stock_query);
-                $stock_stmt->bind_param("i", $order_id);
-                $stock_stmt->execute();
+                $stock_stmt->execute([$order_id]);
 
                 $verification_status = 'Approved';
                 $success_message = "Payment approved and order confirmed successfully!";
@@ -43,8 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Update order status to failed
                 $update_order = "UPDATE orders SET payment_status = 'Failed', payment_verified_at = NOW(), payment_verified_by = ?, status = 'Cancelled' WHERE order_id = ?";
                 $update_stmt = $conn->prepare($update_order);
-                $update_stmt->bind_param("ii", $admin_id, $order_id);
-                $update_stmt->execute();
+                $update_stmt->execute([$admin_id, $order_id]);
 
                 $verification_status = 'Rejected';
                 $success_message = "Payment rejected and order cancelled.";
@@ -54,8 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $log_verification = "INSERT INTO admin_payment_verifications (order_id, admin_id, transaction_id, verification_status, verification_notes)
                                 SELECT ?, ?, transaction_id, ?, ? FROM orders WHERE order_id = ?";
             $log_stmt = $conn->prepare($log_verification);
-            $log_stmt->bind_param("iissi", $order_id, $admin_id, $verification_status, $notes, $order_id);
-            $log_stmt->execute();
+            $log_stmt->execute([$order_id, $admin_id, $verification_status, $notes, $order_id]);
 
             $conn->commit();
             $_SESSION['success_message'] = $success_message;
@@ -77,7 +73,9 @@ $pending_query = "SELECT o.*, u.name as user_name, u.email as user_email,
                   JOIN users u ON o.user_id = u.user_id
                   WHERE o.payment_status = 'Pending' AND o.payment_method = 'UPI'
                   ORDER BY o.order_date DESC";
-$pending_result = $conn->query($pending_query);
+$pending_stmt = $conn->prepare($pending_query);
+$pending_stmt->execute();
+$pending_result = $pending_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get auto-verified orders
 $auto_verified_query = "SELECT o.*, u.name as user_name, u.email as user_email,
@@ -87,7 +85,9 @@ $auto_verified_query = "SELECT o.*, u.name as user_name, u.email as user_email,
                         WHERE o.webhook_verified = TRUE AND o.payment_status = 'Confirmed'
                         ORDER BY o.auto_confirmed_at DESC
                         LIMIT 10";
-$auto_verified_result = $conn->query($auto_verified_query);
+$auto_verified_stmt = $conn->prepare($auto_verified_query);
+$auto_verified_stmt->execute();
+$auto_verified_result = $auto_verified_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get webhook logs
 $webhook_logs_query = "SELECT pl.*, o.customer_name, o.total_price
@@ -96,7 +96,9 @@ $webhook_logs_query = "SELECT pl.*, o.customer_name, o.total_price
                       WHERE pl.webhook_status != 'Pending'
                       ORDER BY pl.created_at DESC
                       LIMIT 20";
-$webhook_logs_result = $conn->query($webhook_logs_query);
+$webhook_logs_stmt = $conn->prepare($webhook_logs_query);
+$webhook_logs_stmt->execute();
+$webhook_logs_result = $webhook_logs_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get recent verifications
 $recent_query = "SELECT o.order_id, o.customer_name, o.total_price, o.payment_method, o.transaction_id,
@@ -107,19 +109,23 @@ $recent_query = "SELECT o.order_id, o.customer_name, o.total_price, o.payment_me
                  LEFT JOIN admin a ON apv.admin_id = a.admin_id
                  ORDER BY apv.verified_at DESC
                  LIMIT 10";
-$recent_result = $conn->query($recent_query);
+$recent_stmt = $conn->prepare($recent_query);
+$recent_stmt->execute();
+$recent_result = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get payment statistics
 $stats_query = "SELECT
-    COUNT(CASE WHEN payment_status = 'Pending' THEN 1 END) as pending_payments,
-    COUNT(CASE WHEN payment_status = 'Confirmed' THEN 1 END) as confirmed_payments,
-    COUNT(CASE WHEN payment_status = 'Failed' THEN 1 END) as failed_payments,
-    COUNT(CASE WHEN webhook_verified = TRUE THEN 1 END) as auto_verified_payments,
+    COUNT(CASE WHEN payment_status = 'Pending' THEN TRUE END) as pending_payments,
+    COUNT(CASE WHEN payment_status = 'Confirmed' THEN TRUE END) as confirmed_payments,
+    COUNT(CASE WHEN payment_status = 'Failed' THEN TRUE END) as failed_payments,
+    COUNT(CASE WHEN webhook_verified = TRUE THEN TRUE END) as auto_verified_payments,
     SUM(CASE WHEN payment_status = 'Confirmed' THEN total_price ELSE 0 END) as confirmed_amount,
     SUM(CASE WHEN payment_status = 'Pending' THEN total_price ELSE 0 END) as pending_amount
     FROM orders
     WHERE payment_method = 'UPI'";
-$stats = $conn->query($stats_query)->fetch_assoc();
+$stats_stmt = $conn->prepare($stats_query);
+$stats_stmt->execute();
+$stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
 
 $page_title = "Payment Verifications";
 include 'includes/admin-header.php';
@@ -222,11 +228,11 @@ include 'includes/admin-header.php';
     <div class="card-header">
         <h5 class="mb-0">
             <i class="fas fa-robot me-2"></i>Auto-Verified Orders
-            <span class="badge bg-success ms-2"><?php echo $auto_verified_result->num_rows; ?></span>
+            <span class="badge bg-success ms-2"><?php echo count($auto_verified_result); ?></span>
         </h5>
     </div>
     <div class="card-body">
-        <?php if ($auto_verified_result->num_rows > 0): ?>
+        <?php if (count($auto_verified_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -240,7 +246,7 @@ include 'includes/admin-header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($order = $auto_verified_result->fetch_assoc()): ?>
+                    <?php foreach ($auto_verified_result as $order): ?>
                     <tr>
                         <td><strong>#<?php echo $order['order_id']; ?></strong></td>
                         <td>
@@ -265,7 +271,7 @@ include 'includes/admin-header.php';
                             </span>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -284,11 +290,11 @@ include 'includes/admin-header.php';
     <div class="card-header">
         <h5 class="mb-0">
             <i class="fas fa-hourglass-half me-2"></i>Pending Payment Verifications
-            <span class="badge bg-warning ms-2"><?php echo $pending_result->num_rows; ?></span>
+            <span class="badge bg-warning ms-2"><?php echo count($pending_result); ?></span>
         </h5>
     </div>
     <div class="card-body">
-        <?php if ($pending_result->num_rows > 0): ?>
+        <?php if (count($pending_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -304,7 +310,7 @@ include 'includes/admin-header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($order = $pending_result->fetch_assoc()): ?>
+                    <?php foreach ($pending_result as $order): ?>
                     <tr>
                         <td><strong>#<?php echo $order['order_id']; ?></strong></td>
                         <td>
@@ -347,7 +353,7 @@ include 'includes/admin-header.php';
                             </button>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -369,7 +375,7 @@ include 'includes/admin-header.php';
         </h5>
     </div>
     <div class="card-body">
-        <?php if ($recent_result->num_rows > 0): ?>
+        <?php if (count($recent_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-sm">
                 <thead>
@@ -384,7 +390,7 @@ include 'includes/admin-header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($verification = $recent_result->fetch_assoc()): ?>
+                    <?php foreach ($recent_result as $verification): ?>
                     <tr>
                         <td>#<?php echo $verification['order_id']; ?></td>
                         <td><?php echo htmlspecialchars($verification['customer_name']); ?></td>
@@ -404,7 +410,7 @@ include 'includes/admin-header.php';
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -416,11 +422,11 @@ include 'includes/admin-header.php';
     <div class="card-header">
         <h5 class="mb-0">
             <i class="fas fa-exchange-alt me-2"></i>Webhook Activity Logs
-            <span class="badge bg-info ms-2"><?php echo $webhook_logs_result->num_rows; ?></span>
+            <span class="badge bg-info ms-2"><?php echo count($webhook_logs_result); ?></span>
         </h5>
     </div>
     <div class="card-body">
-        <?php if ($webhook_logs_result->num_rows > 0): ?>
+        <?php if (count($webhook_logs_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-sm">
                 <thead>
@@ -435,7 +441,7 @@ include 'includes/admin-header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($log = $webhook_logs_result->fetch_assoc()): ?>
+                    <?php foreach ($webhook_logs_result as $log): ?>
                     <tr>
                         <td>#<?php echo $log['order_id']; ?></td>
                         <td><?php echo htmlspecialchars($log['customer_name']); ?></td>
@@ -455,7 +461,7 @@ include 'includes/admin-header.php';
                             <?php echo date('M d, H:i', strtotime($log['created_at'])); ?>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

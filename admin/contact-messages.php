@@ -6,13 +6,13 @@ include 'includes/admin-header.php';
 if (isset($_GET['action']) && isset($_GET['id'])) {
     $message_id = (int)$_GET['id'];
     $action = sanitizeInput($_GET['action']);
-    
+
     if ($action == 'mark_read') {
-        $update_query = "UPDATE contact_messages SET is_read = 1 WHERE message_id = ?";
+        $update_query = "UPDATE contact_messages SET is_read = TRUE WHERE message_id = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("i", $message_id);
-        
-        if ($update_stmt->execute()) {
+        $update_stmt->execute([$message_id]);
+
+        if ($update_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Message marked as read.";
         } else {
             $_SESSION['error_message'] = "Failed to update message status.";
@@ -20,15 +20,15 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     } elseif ($action == 'delete') {
         $delete_query = "DELETE FROM contact_messages WHERE message_id = ?";
         $delete_stmt = $conn->prepare($delete_query);
-        $delete_stmt->bind_param("i", $message_id);
-        
-        if ($delete_stmt->execute()) {
+        $delete_stmt->execute([$message_id]);
+
+        if ($delete_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Message deleted successfully.";
         } else {
             $_SESSION['error_message'] = "Failed to delete message.";
         }
     }
-    
+
     header("Location: contact-messages.php");
     exit();
 }
@@ -58,9 +58,9 @@ if (!empty($search)) {
 }
 
 if ($status_filter === 'read') {
-    $where_conditions[] = "is_read = 1";
+    $where_conditions[] = "is_read = TRUE";
 } elseif ($status_filter === 'unread') {
-    $where_conditions[] = "is_read = 0";
+    $where_conditions[] = "is_read = FALSE";
 }
 
 if (!empty($subject_filter)) {
@@ -75,10 +75,11 @@ $where_clause = implode(" AND ", $where_conditions);
 $count_query = "SELECT COUNT(*) as total FROM contact_messages WHERE $where_clause";
 $count_stmt = $conn->prepare($count_query);
 if (!empty($params)) {
-    $count_stmt->bind_param($param_types, ...$params);
+    $count_stmt->execute($params);
+} else {
+    $count_stmt->execute();
 }
-$count_stmt->execute();
-$total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+$total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Get messages
@@ -93,14 +94,17 @@ $param_types .= "ii";
 
 $stmt = $conn->prepare($query);
 if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
 }
-$stmt->execute();
-$messages_result = $stmt->get_result();
+$messages_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get unique subjects for filter
 $subjects_query = "SELECT DISTINCT subject FROM contact_messages WHERE subject IS NOT NULL AND subject != '' ORDER BY subject";
-$subjects_result = $conn->query($subjects_query);
+$subjects_stmt = $conn->prepare($subjects_query);
+$subjects_stmt->execute();
+$subjects_result = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -119,12 +123,13 @@ $subjects_result = $conn->query($subjects_query);
     <?php
     $stats_query = "SELECT 
                     COUNT(*) as total_messages,
-                    SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END) as unread_messages,
-                    SUM(CASE WHEN is_read = 1 THEN 1 ELSE 0 END) as read_messages,
-                    SUM(CASE WHEN date >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as recent_messages
+                    SUM(CASE WHEN is_read = FALSE THEN 1 ELSE 0 END) as unread_messages,
+                    SUM(CASE WHEN is_read = TRUE THEN 1 ELSE 0 END) as read_messages,
+                    SUM(CASE WHEN date >= CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END) as recent_messages
                     FROM contact_messages";
-    $stats_result = $conn->query($stats_query);
-    $stats = $stats_result->fetch_assoc();
+    $stats_stmt = $conn->prepare($stats_query);
+    $stats_stmt->execute();
+    $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
     ?>
     
     <div class="col-md-3 mb-3">
@@ -199,12 +204,12 @@ $subjects_result = $conn->query($subjects_query);
                 <label for="subject" class="form-label">Subject</label>
                 <select class="form-select" id="subject" name="subject">
                     <option value="">All Subjects</option>
-                    <?php while ($subject = $subjects_result->fetch_assoc()): ?>
-                    <option value="<?php echo htmlspecialchars($subject['subject']); ?>" 
+                    <?php foreach ($subjects_result as $subject): ?>
+                    <option value="<?php echo htmlspecialchars($subject['subject']); ?>"
                             <?php echo $subject_filter == $subject['subject'] ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($subject['subject']); ?>
                     </option>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </select>
             </div>
             
@@ -235,7 +240,7 @@ $subjects_result = $conn->query($subjects_query);
         <h5 class="mb-0">Messages (<?php echo $total_records; ?>)</h5>
     </div>
     <div class="card-body p-0">
-        <?php if ($messages_result->num_rows > 0): ?>
+        <?php if (count($messages_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
@@ -249,7 +254,7 @@ $subjects_result = $conn->query($subjects_query);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($message = $messages_result->fetch_assoc()): ?>
+                    <?php foreach ($messages_result as $message): ?>
                     <tr class="<?php echo !$message['is_read'] ? 'table-warning' : ''; ?>">
                         <td>
                             <div>
@@ -351,7 +356,7 @@ $subjects_result = $conn->query($subjects_query);
                             </div>
                         </div>
                     </div>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

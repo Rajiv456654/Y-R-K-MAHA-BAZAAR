@@ -19,15 +19,14 @@ $sales_query = "SELECT
     COUNT(*) as total_orders,
     SUM(total_price) as total_revenue,
     AVG(total_price) as avg_order_value,
-    COUNT(CASE WHEN status = 'Delivered' THEN 1 END) as completed_orders,
-    COUNT(CASE WHEN status = 'Cancelled' THEN 1 END) as cancelled_orders,
-    COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pending_orders
+    COUNT(CASE WHEN status = 'Delivered' THEN TRUE END) as completed_orders,
+    COUNT(CASE WHEN status = 'Cancelled' THEN TRUE END) as cancelled_orders,
+    COUNT(CASE WHEN status = 'Pending' THEN TRUE END) as pending_orders
     FROM orders 
     WHERE order_date BETWEEN ? AND ?";
 $sales_stmt = $conn->prepare($sales_query);
-$sales_stmt->bind_param("ss", $start_date, $end_date);
-$sales_stmt->execute();
-$sales_data = $sales_stmt->get_result()->fetch_assoc();
+$sales_stmt->execute([$start_date, $end_date]);
+$sales_data = $sales_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Daily sales for chart
 $daily_sales_query = "SELECT 
@@ -39,9 +38,8 @@ $daily_sales_query = "SELECT
     GROUP BY DATE(order_date)
     ORDER BY date";
 $daily_stmt = $conn->prepare($daily_sales_query);
-$daily_stmt->bind_param("ss", $start_date, $end_date);
-$daily_stmt->execute();
-$daily_sales = $daily_stmt->get_result();
+$daily_stmt->execute([$start_date, $end_date]);
+$daily_sales = $daily_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Top selling products
 $top_products_query = "SELECT 
@@ -57,9 +55,8 @@ $top_products_query = "SELECT
     ORDER BY total_sold DESC
     LIMIT 10";
 $top_products_stmt = $conn->prepare($top_products_query);
-$top_products_stmt->bind_param("ss", $start_date, $end_date);
-$top_products_stmt->execute();
-$top_products = $top_products_stmt->get_result();
+$top_products_stmt->execute([$start_date, $end_date]);
+$top_products = $top_products_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Category performance
 $category_query = "SELECT 
@@ -75,9 +72,8 @@ $category_query = "SELECT
     GROUP BY c.category_id
     ORDER BY revenue DESC";
 $category_stmt = $conn->prepare($category_query);
-$category_stmt->bind_param("ss", $start_date, $end_date);
-$category_stmt->execute();
-$category_data = $category_stmt->get_result();
+$category_stmt->execute([$start_date, $end_date]);
+$category_data = $category_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Customer insights
 $customer_query = "SELECT 
@@ -88,9 +84,8 @@ $customer_query = "SELECT
     FROM orders 
     WHERE order_date BETWEEN ? AND ?";
 $customer_stmt = $conn->prepare($customer_query);
-$customer_stmt->bind_param("ss", $start_date, $end_date);
-$customer_stmt->execute();
-$customer_data = $customer_stmt->get_result()->fetch_assoc();
+$customer_stmt->execute([$start_date, $end_date]);
+$customer_data = $customer_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Top customers
 $top_customers_query = "SELECT 
@@ -105,19 +100,20 @@ $top_customers_query = "SELECT
     ORDER BY total_spent DESC
     LIMIT 10";
 $top_customers_stmt = $conn->prepare($top_customers_query);
-$top_customers_stmt->bind_param("ss", $start_date, $end_date);
-$top_customers_stmt->execute();
-$top_customers = $top_customers_stmt->get_result();
+$top_customers_stmt->execute([$start_date, $end_date]);
+$top_customers = $top_customers_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Inventory insights
 $inventory_query = "SELECT 
     COUNT(*) as total_products,
-    COUNT(CASE WHEN stock <= 5 THEN 1 END) as low_stock_products,
-    COUNT(CASE WHEN stock = 0 THEN 1 END) as out_of_stock_products,
+    COUNT(CASE WHEN stock <= 5 THEN TRUE END) as low_stock_products,
+    COUNT(CASE WHEN stock = 0 THEN TRUE END) as out_of_stock_products,
     AVG(stock) as avg_stock_level
     FROM products 
-    WHERE is_active = 1";
-$inventory_data = $conn->query($inventory_query)->fetch_assoc();
+    WHERE is_active = TRUE";
+$inventory_stmt = $conn->prepare($inventory_query);
+$inventory_stmt->execute();
+$inventory_data = $inventory_stmt->fetch(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "Reports & Analytics";
@@ -388,17 +384,16 @@ include 'includes/admin-header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
+                        <?php
                         $max_sold = 0;
-                        $products_array = [];
-                        while ($product = $top_products->fetch_assoc()) {
-                            $products_array[] = $product;
+                        $products_array = $top_products;
+                        foreach ($products_array as $product) {
                             if ($product['total_sold'] > $max_sold) {
                                 $max_sold = $product['total_sold'];
                             }
                         }
-                        
-                        foreach ($products_array as $product): 
+
+                        foreach ($products_array as $product):
                             $percentage = $max_sold > 0 ? ($product['total_sold'] / $max_sold) * 100 : 0;
                         ?>
                         <tr>
@@ -414,7 +409,7 @@ include 'includes/admin-header.php';
                             </td>
                         </tr>
                         <?php endforeach; ?>
-                        
+
                         <?php if (empty($products_array)): ?>
                         <tr>
                             <td colspan="4" class="text-center py-4">
@@ -444,17 +439,19 @@ include 'includes/admin-header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
+                        <?php
                         $max_spent = 0;
-                        $customers_array = [];
-                        while ($customer = $top_customers->fetch_assoc()) {
-                            $customers_array[] = $customer;
+                        $stmt = $pdo->prepare("SELECT * FROM customers ORDER BY total_spent DESC");
+                        $stmt->execute();
+                        $customers_array = $stmt->fetchAll();
+
+                        foreach ($customers_array as $customer) {
                             if ($customer['total_spent'] > $max_spent) {
                                 $max_spent = $customer['total_spent'];
                             }
                         }
-                        
-                        foreach ($customers_array as $customer): 
+
+                        foreach ($customers_array as $customer):
                             $percentage = $max_spent > 0 ? ($customer['total_spent'] / $max_spent) * 100 : 0;
                         ?>
                         <tr>
@@ -504,17 +501,16 @@ include 'includes/admin-header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
+                        <?php
                         $max_revenue = 0;
-                        $categories_array = [];
-                        while ($category = $category_data->fetch_assoc()) {
-                            $categories_array[] = $category;
+                        $categories_array = $category_data;
+                        foreach ($categories_array as $category) {
                             if ($category['revenue'] > $max_revenue) {
                                 $max_revenue = $category['revenue'];
                             }
                         }
-                        
-                        foreach ($categories_array as $category): 
+
+                        foreach ($categories_array as $category):
                             $percentage = $max_revenue > 0 ? ($category['revenue'] / $max_revenue) * 100 : 0;
                         ?>
                         <tr>
@@ -551,11 +547,10 @@ include 'includes/admin-header.php';
 const salesCtx = document.getElementById('salesChart').getContext('2d');
 const salesData = {
     labels: [
-        <?php 
-        $daily_sales->data_seek(0);
+        <?php
         $dates = [];
         $revenues = [];
-        while ($day = $daily_sales->fetch_assoc()) {
+        foreach ($daily_sales as $day) {
             $dates[] = "'" . date('M d', strtotime($day['date'])) . "'";
             $revenues[] = $day['revenue'];
         }

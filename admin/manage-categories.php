@@ -18,17 +18,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Check if category already exists
             $check_query = "SELECT category_id FROM categories WHERE category_name = ?";
             $check_stmt = $conn->prepare($check_query);
-            $check_stmt->bind_param("s", $category_name);
-            $check_stmt->execute();
-            
-            if ($check_stmt->get_result()->num_rows > 0) {
+            $check_stmt->execute([$category_name]);
+
+            if ($check_stmt->rowCount() > 0) {
                 $error_message = "Category already exists.";
             } else {
                 $insert_query = "INSERT INTO categories (category_name, description) VALUES (?, ?)";
                 $insert_stmt = $conn->prepare($insert_query);
-                $insert_stmt->bind_param("ss", $category_name, $description);
-                
-                if ($insert_stmt->execute()) {
+                $insert_stmt->execute([$category_name, $description]);
+
+                if ($insert_stmt->rowCount() > 0) {
                     $_SESSION['success_message'] = "Category added successfully!";
                     header("Location: manage-categories.php");
                     exit();
@@ -48,9 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             $update_query = "UPDATE categories SET category_name = ?, description = ? WHERE category_id = ?";
             $update_stmt = $conn->prepare($update_query);
-            $update_stmt->bind_param("ssi", $category_name, $description, $category_id);
-            
-            if ($update_stmt->execute()) {
+            $update_stmt->execute([$category_name, $description, $category_id]);
+
+            if ($update_stmt->rowCount() > 0) {
                 $_SESSION['success_message'] = "Category updated successfully!";
                 header("Location: manage-categories.php");
                 exit();
@@ -68,18 +67,17 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     // Check if category has products
     $check_products = "SELECT COUNT(*) as count FROM products WHERE category_id = ?";
     $check_stmt = $conn->prepare($check_products);
-    $check_stmt->bind_param("i", $category_id);
-    $check_stmt->execute();
-    $product_count = $check_stmt->get_result()->fetch_assoc()['count'];
+    $check_stmt->execute([$category_id]);
+    $product_count = $check_stmt->fetch(PDO::FETCH_ASSOC)['count'];
     
     if ($product_count > 0) {
         $_SESSION['error_message'] = "Cannot delete category. It has $product_count products associated with it.";
     } else {
         $delete_query = "DELETE FROM categories WHERE category_id = ?";
         $delete_stmt = $conn->prepare($delete_query);
-        $delete_stmt->bind_param("i", $category_id);
-        
-        if ($delete_stmt->execute()) {
+        $delete_stmt->execute([$category_id]);
+
+        if ($delete_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Category deleted successfully!";
         } else {
             $_SESSION['error_message'] = "Failed to delete category.";
@@ -91,12 +89,14 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 }
 
 // Get categories with product count
-$categories_query = "SELECT c.*, COUNT(p.product_id) as product_count 
-                     FROM categories c 
-                     LEFT JOIN products p ON c.category_id = p.category_id 
-                     GROUP BY c.category_id 
+$categories_query = "SELECT c.*, COUNT(p.product_id) as product_count
+                     FROM categories c
+                     LEFT JOIN products p ON c.category_id = p.category_id
+                     GROUP BY c.category_id
                      ORDER BY c.category_name";
-$categories_result = $conn->query($categories_query);
+$categories_stmt = $conn->prepare($categories_query);
+$categories_stmt->execute();
+$categories_result = $categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get category for editing if edit ID is provided
 $edit_category = null;
@@ -104,11 +104,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     $edit_id = (int)$_GET['edit'];
     $edit_query = "SELECT * FROM categories WHERE category_id = ?";
     $edit_stmt = $conn->prepare($edit_query);
-    $edit_stmt->bind_param("i", $edit_id);
-    $edit_stmt->execute();
-    $edit_result = $edit_stmt->get_result();
-    if ($edit_result->num_rows > 0) {
-        $edit_category = $edit_result->fetch_assoc();
+    $edit_stmt->execute([$edit_id]);
+    $edit_result = $edit_stmt->fetch(PDO::FETCH_ASSOC);
+    if ($edit_result) {
+        $edit_category = $edit_result;
     }
 }
 ?>
@@ -174,10 +173,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Categories (<?php echo $categories_result->num_rows; ?>)</h5>
+                <h5 class="mb-0">Categories (<?php echo count($categories_result); ?>)</h5>
             </div>
             <div class="card-body p-0">
-                <?php if ($categories_result->num_rows > 0): ?>
+                <?php if (count($categories_result) > 0): ?>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
@@ -190,7 +189,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($category = $categories_result->fetch_assoc()): ?>
+                            <?php foreach ($categories_result as $category): ?>
                             <tr>
                                 <td>
                                     <strong><?php echo htmlspecialchars($category['category_name']); ?></strong>
@@ -228,7 +227,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                                     </div>
                                 </td>
                             </tr>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -241,23 +240,24 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                 <?php endif; ?>
             </div>
         </div>
-        
+
         <!-- Category Statistics -->
         <div class="row mt-4">
             <?php
-            $stats_query = "SELECT 
+            $stats_query = "SELECT
                             COUNT(DISTINCT c.category_id) as total_categories,
                             COUNT(DISTINCT p.product_id) as total_products,
                             AVG(product_counts.product_count) as avg_products_per_category
-                            FROM categories c 
+                            FROM categories c
                             LEFT JOIN products p ON c.category_id = p.category_id
                             LEFT JOIN (
-                                SELECT category_id, COUNT(*) as product_count 
-                                FROM products 
+                                SELECT category_id, COUNT(*) as product_count
+                                FROM products
                                 GROUP BY category_id
                             ) product_counts ON c.category_id = product_counts.category_id";
-            $stats_result = $conn->query($stats_query);
-            $stats = $stats_result->fetch_assoc();
+            $stats_stmt = $conn->prepare($stats_query);
+            $stats_stmt->execute();
+            $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
             ?>
             
             <div class="col-md-4">

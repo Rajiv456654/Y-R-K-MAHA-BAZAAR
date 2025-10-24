@@ -5,27 +5,26 @@ include 'includes/admin-header.php';
 // Handle user status toggle
 if (isset($_GET['toggle_status']) && is_numeric($_GET['toggle_status'])) {
     $user_id = (int)$_GET['toggle_status'];
-    
+
     // Get current status
     $status_query = "SELECT is_active FROM users WHERE user_id = ?";
     $status_stmt = $conn->prepare($status_query);
-    $status_stmt->bind_param("i", $user_id);
-    $status_stmt->execute();
-    $current_status = $status_stmt->get_result()->fetch_assoc()['is_active'];
-    
+    $status_stmt->execute([$user_id]);
+    $current_status = $status_stmt->fetch(PDO::FETCH_ASSOC)['is_active'];
+
     // Toggle status
-    $new_status = $current_status ? 0 : 1;
+    $new_status = $current_status ? FALSE : TRUE;
     $update_query = "UPDATE users SET is_active = ? WHERE user_id = ?";
     $update_stmt = $conn->prepare($update_query);
-    $update_stmt->bind_param("ii", $new_status, $user_id);
-    
-    if ($update_stmt->execute()) {
+    $update_stmt->execute([$new_status, $user_id]);
+
+    if ($update_stmt->rowCount() > 0) {
         $action = $new_status ? 'activated' : 'deactivated';
         $_SESSION['success_message'] = "User $action successfully!";
     } else {
         $_SESSION['error_message'] = "Failed to update user status.";
     }
-    
+
     header("Location: manage-users.php");
     exit();
 }
@@ -79,21 +78,22 @@ $where_clause = implode(" AND ", $where_conditions);
 $count_query = "SELECT COUNT(*) as total FROM users u WHERE $where_clause";
 $count_stmt = $conn->prepare($count_query);
 if (!empty($params)) {
-    $count_stmt->bind_param($param_types, ...$params);
+    $count_stmt->execute($params);
+} else {
+    $count_stmt->execute();
 }
-$count_stmt->execute();
-$total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+$total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Get users with order statistics
-$query = "SELECT u.*, 
+$query = "SELECT u.*,
           COUNT(DISTINCT o.order_id) as total_orders,
           COALESCE(SUM(CASE WHEN o.status != 'Cancelled' THEN o.total_price ELSE 0 END), 0) as total_spent
-          FROM users u 
-          LEFT JOIN orders o ON u.user_id = o.user_id 
-          WHERE $where_clause 
-          GROUP BY u.user_id 
-          ORDER BY u.created_at DESC 
+          FROM users u
+          LEFT JOIN orders o ON u.user_id = o.user_id
+          WHERE $where_clause
+          GROUP BY u.user_id
+          ORDER BY u.created_at DESC
           LIMIT ? OFFSET ?";
 
 $params[] = $records_per_page;
@@ -102,10 +102,11 @@ $param_types .= "ii";
 
 $stmt = $conn->prepare($query);
 if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
 }
-$stmt->execute();
-$users_result = $stmt->get_result();
+$users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -122,14 +123,15 @@ $users_result = $stmt->get_result();
 <!-- User Statistics -->
 <div class="row mb-4">
     <?php
-    $stats_query = "SELECT 
+    $stats_query = "SELECT
                     COUNT(*) as total_users,
-                    SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_users,
-                    SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive_users,
-                    SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as new_users
+                    SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END) as active_users,
+                    SUM(CASE WHEN is_active = FALSE THEN 1 ELSE 0 END) as inactive_users,
+                    SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 ELSE 0 END) as new_users
                     FROM users";
-    $stats_result = $conn->query($stats_query);
-    $stats = $stats_result->fetch_assoc();
+    $stats_stmt = $conn->prepare($stats_query);
+    $stats_stmt->execute();
+    $stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
     ?>
     
     <div class="col-md-3 mb-3">
@@ -239,7 +241,7 @@ $users_result = $stmt->get_result();
         <h5 class="mb-0">Users (<?php echo $total_records; ?>)</h5>
     </div>
     <div class="card-body p-0">
-        <?php if ($users_result->num_rows > 0): ?>
+        <?php if (count($users_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
@@ -254,7 +256,7 @@ $users_result = $stmt->get_result();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($user = $users_result->fetch_assoc()): ?>
+                    <?php foreach ($users_result as $user): ?>
                     <tr>
                         <td>
                             <div class="d-flex align-items-center">
@@ -309,7 +311,7 @@ $users_result = $stmt->get_result();
                             </div>
                         </td>
                     </tr>
-                    
+
                     <!-- User Details Row -->
                     <tr class="collapse" id="user-<?php echo $user['user_id']; ?>">
                         <td colspan="7">
@@ -327,18 +329,17 @@ $users_result = $stmt->get_result();
                                         // Get recent orders for this user
                                         $recent_orders_query = "SELECT order_id, total_price, status, order_date 
                                                                FROM orders 
-                                                               WHERE user_id = ? 
+                                                               WHERE user_id = ?
                                                                ORDER BY order_date DESC 
                                                                LIMIT 3";
                                         $recent_orders_stmt = $conn->prepare($recent_orders_query);
-                                        $recent_orders_stmt->bind_param("i", $user['user_id']);
-                                        $recent_orders_stmt->execute();
-                                        $recent_orders_result = $recent_orders_stmt->get_result();
+                                        $recent_orders_stmt->execute([$user['user_id']]);
+                                        $recent_orders_result = $recent_orders_stmt->fetchAll(PDO::FETCH_ASSOC);
                                         ?>
                                         
-                                        <?php if ($recent_orders_result->num_rows > 0): ?>
+                                        <?php if (count($recent_orders_result) > 0): ?>
                                         <ul class="list-unstyled">
-                                            <?php while ($order = $recent_orders_result->fetch_assoc()): ?>
+                                            <?php foreach ($recent_orders_result as $order): ?>
                                             <li class="mb-1">
                                                 <strong>#<?php echo $order['order_id']; ?></strong> - 
                                                 <?php echo formatPrice($order['total_price']); ?>
@@ -348,7 +349,7 @@ $users_result = $stmt->get_result();
                                                 <br>
                                                 <small class="text-muted"><?php echo date('M d, Y', strtotime($order['order_date'])); ?></small>
                                             </li>
-                                            <?php endwhile; ?>
+                                            <?php endforeach; ?>
                                         </ul>
                                         <?php else: ?>
                                         <p class="text-muted">No orders yet</p>
@@ -358,7 +359,7 @@ $users_result = $stmt->get_result();
                             </div>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

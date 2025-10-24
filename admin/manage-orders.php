@@ -20,9 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     if (in_array($new_status, $valid_statuses)) {
         $update_query = "UPDATE orders SET status = ? WHERE order_id = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("si", $new_status, $order_id);
+        $update_stmt->execute([$new_status, $order_id]);
 
-        if ($update_stmt->execute()) {
+        if ($update_stmt->rowCount() > 0) {
             $_SESSION['success_message'] = "Order status updated successfully!";
         } else {
             $_SESSION['error_message'] = "Failed to update order status.";
@@ -85,19 +85,12 @@ $where_clause = implode(" AND ", $where_conditions);
 // Get total count
 $count_query = "SELECT COUNT(*) as total FROM orders o WHERE $where_clause";
 $count_stmt = $conn->prepare($count_query);
-if (!$count_stmt) {
-    die("Count query preparation failed: " . $conn->error);
-}
-
 if (!empty($params)) {
-    $count_stmt->bind_param($param_types, ...$params);
+    $count_stmt->execute($params);
+} else {
+    $count_stmt->execute();
 }
-
-if (!$count_stmt->execute()) {
-    die("Count query execution failed: " . $count_stmt->error);
-}
-
-$total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+$total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Get orders
@@ -115,19 +108,12 @@ $params[] = $offset;
 $param_types .= "ii";
 
 $stmt = $conn->prepare($query);
-if (!$stmt) {
-    die("Database query preparation failed: " . $conn->error);
-}
-
 if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt->execute($params);
+} else {
+    $stmt->execute();
 }
-
-if (!$stmt->execute()) {
-    die("Database query execution failed: " . $stmt->error);
-}
-
-$orders_result = $stmt->get_result();
+$orders_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Now output HTML after PHP processing
 $page_title = "Manage Orders";
@@ -213,7 +199,7 @@ include 'includes/admin-header.php';
         <h5 class="mb-0">Orders (<?php echo $total_records; ?>)</h5>
     </div>
     <div class="card-body p-0">
-        <?php if ($orders_result->num_rows > 0): ?>
+        <?php if (count($orders_result) > 0): ?>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
@@ -228,7 +214,7 @@ include 'includes/admin-header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($order = $orders_result->fetch_assoc()): ?>
+                    <?php foreach ($orders_result as $order): ?>
                     <tr>
                         <td>
                             <strong>#<?php echo $order['order_id']; ?></strong>
@@ -302,25 +288,24 @@ include 'includes/admin-header.php';
                                                        JOIN products p ON oi.product_id = p.product_id 
                                                        WHERE oi.order_id = ?";
                                         $items_stmt = $conn->prepare($items_query);
-                                        $items_stmt->bind_param("i", $order['order_id']);
-                                        $items_stmt->execute();
-                                        $items_result = $items_stmt->get_result();
+                                        $items_stmt->execute([$order['order_id']]);
+                                        $items_result = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
                                         ?>
                                         <ul class="list-unstyled">
-                                            <?php while ($item = $items_result->fetch_assoc()): ?>
+                                            <?php foreach ($items_result as $item): ?>
                                             <li class="mb-1">
                                                 <strong><?php echo htmlspecialchars($item['name']); ?></strong>
                                                 <br>
                                                 <small>Qty: <?php echo $item['quantity']; ?> × <?php echo formatPrice($item['price']); ?> = <?php echo formatPrice($item['quantity'] * $item['price']); ?></small>
                                             </li>
-                                            <?php endwhile; ?>
+                                            <?php endforeach; ?>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
                         </td>
                     </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
