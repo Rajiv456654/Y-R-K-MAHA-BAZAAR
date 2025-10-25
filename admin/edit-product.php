@@ -16,31 +16,28 @@ if ($product_id <= 0) {
     exit();
 }
 
-// Get product details
+// Get product details using PDO
 $product_query = "SELECT * FROM products WHERE product_id = ?";
 $product_stmt = $conn->prepare($product_query);
-$product_stmt->bind_param("i", $product_id);
-$product_stmt->execute();
-$product_result = $product_stmt->get_result();
+$product_stmt->execute([$product_id]);
+$product = $product_stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($product_result->num_rows == 0) {
+if (!$product) {
     $_SESSION['error_message'] = "Product not found.";
     header("Location: manage-products.php");
     exit();
 }
-
-$product = $product_result->fetch_assoc();
 
 $error_message = '';
 $success_message = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = sanitizeInput($_POST['name']);
-    $category_id = (int)$_POST['category_id'];
-    $description = sanitizeInput($_POST['description']);
-    $price = (float)$_POST['price'];
-    $stock = (int)$_POST['stock'];
+    $name = sanitizeInput($_POST['name'] ?? '');
+    $category_id = (int)($_POST['category_id'] ?? 0);
+    $description = sanitizeInput($_POST['description'] ?? '');
+    $price = (float)($_POST['price'] ?? 0);
+    $stock = (int)($_POST['stock'] ?? 0);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     
     // Validation
@@ -57,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 mkdir($upload_dir, 0777, true);
             }
             
-            $new_image = uploadImage($_FILES['image'], $upload_dir);
+            $new_image = uploadImage($_FILES['image']);
             if ($new_image) {
                 // Delete old image if it exists and is not default
                 if ($product['image'] && $product['image'] != 'default-product.jpg' && file_exists($upload_dir . $product['image'])) {
@@ -70,12 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         if (empty($error_message)) {
-            // Update product
+            // Update product using PDO
             $query = "UPDATE products SET name = ?, category_id = ?, description = ?, price = ?, stock = ?, image = ?, is_active = ? WHERE product_id = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("sisdisii", $name, $category_id, $description, $price, $stock, $image_name, $is_active, $product_id);
-            
-            if ($stmt->execute()) {
+            $stmt->execute([$name, $category_id, $description, $price, $stock, $image_name, $is_active, $product_id]);
+
+            if ($stmt->rowCount() > 0) {
                 $_SESSION['success_message'] = "Product updated successfully!";
                 header("Location: manage-products.php");
                 exit();
@@ -86,9 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Get categories
+// Get categories using PDO
 $categories_query = "SELECT * FROM categories ORDER BY category_name";
-$categories_result = $conn->query($categories_query);
+$categories_stmt = $conn->prepare($categories_query);
+$categories_stmt->execute();
+$categories_result = $categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "Edit Product";
@@ -131,12 +130,12 @@ include 'includes/admin-header.php';
                             <label for="category_id" class="form-label">Category *</label>
                             <select class="form-select" id="category_id" name="category_id" required>
                                 <option value="">Select Category</option>
-                                <?php while ($category = $categories_result->fetch_assoc()): ?>
-                                <option value="<?php echo $category['category_id']; ?>" 
+                                <?php foreach ($categories_result as $category): ?>
+                                <option value="<?php echo $category['category_id']; ?>"
                                         <?php echo $product['category_id'] == $category['category_id'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($category['category_name']); ?>
                                 </option>
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
                             </select>
                             <div class="invalid-feedback">Please select a category.</div>
                         </div>
@@ -280,4 +279,44 @@ include 'includes/admin-header.php';
     </div>
 </div>
 
-<?php include 'includes/admin-footer.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Image preview functionality
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('image-preview');
+
+    if (imageInput && imagePreview) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = '../assets/images/products/<?php echo $product['image'] ?: 'default-product.jpg'; ?>';
+                imagePreview.style.display = 'block';
+            }
+        });
+    }
+
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+});
+
+// Confirmation dialog for delete actions
+function confirmDelete(message) {
+    return confirm(message);
+}
+</script>

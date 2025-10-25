@@ -293,4 +293,11 @@ include 'includes/admin-header.php';
 </nav>
 <?php endif; ?>
 
+<script>
+// Confirmation dialog for delete actions
+function confirmDelete(message) {
+    return confirm(message);
+}
+</script>
+
 <?php include 'includes/admin-footer.php'; ?>

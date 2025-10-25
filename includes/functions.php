@@ -38,7 +38,7 @@ function requireAdminLogin() {
 
 // Sanitize input data
 function sanitizeInput($data) {
-    $data = trim($data);
+    $data = trim((string)$data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
     return $data;
@@ -105,32 +105,48 @@ function verifyCSRFToken($token) {
 
 // Upload image file
 function uploadImage($file, $target_dir = "assets/images/products/") {
+    // Ensure target directory starts with proper path
+    if (strpos($target_dir, '../') === 0) {
+        // If called from admin directory, adjust path
+        $base_path = dirname(dirname(__FILE__)); // Go up from includes to root
+        $target_dir = $base_path . '/' . substr($target_dir, 3);
+    } else {
+        // If called from root, use as is
+        $target_dir = dirname(__FILE__) . '/../' . $target_dir;
+    }
+
+    // Create directory if it doesn't exist
+    if (!file_exists($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+
     $target_file = $target_dir . basename($file["name"]);
     $uploadOk = 1;
     $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-    
+
     // Check if image file is actual image
     $check = getimagesize($file["tmp_name"]);
     if($check === false) {
         return false;
     }
-    
+
     // Check file size (5MB max)
     if ($file["size"] > 5000000) {
         return false;
     }
-    
+
     // Allow certain file formats
     if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif" ) {
         return false;
     }
-    
+
     // Generate unique filename
     $unique_name = time() . '_' . uniqid() . '.' . $imageFileType;
     $target_file = $target_dir . $unique_name;
-    
+
     if (move_uploaded_file($file["tmp_name"], $target_file)) {
-        return $unique_name;
+        // Return relative path for database storage
+        return 'assets/images/products/' . $unique_name;
     } else {
         return false;
     }

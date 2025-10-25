@@ -14,11 +14,11 @@ $success_message = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = sanitizeInput($_POST['name']);
-    $category_id = (int)$_POST['category_id'];
-    $description = sanitizeInput($_POST['description']);
-    $price = (float)$_POST['price'];
-    $stock = (int)$_POST['stock'];
+    $name = sanitizeInput($_POST['name'] ?? '');
+    $category_id = (int)($_POST['category_id'] ?? 0);
+    $description = sanitizeInput($_POST['description'] ?? '');
+    $price = (float)($_POST['price'] ?? 0);
+    $stock = (int)($_POST['stock'] ?? 0);
     
     // Validation
     if (empty($name) || empty($description) || $price <= 0 || $stock < 0 || $category_id <= 0) {
@@ -27,26 +27,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Handle image upload
         $image_name = '';
         if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-            $upload_dir = '../assets/images/products/';
-            
-            // Create directory if it doesn't exist
-            if (!file_exists($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-            
-            $image_name = uploadImage($_FILES['image'], $upload_dir);
+            $image_name = uploadImage($_FILES['image']);
             if (!$image_name) {
                 $error_message = "Failed to upload image. Please check file format and size.";
             }
         }
         
         if (empty($error_message)) {
-            // Insert product
+            // Insert product using PDO
             $query = "INSERT INTO products (name, category_id, description, price, stock, image) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("sisdis", $name, $category_id, $description, $price, $stock, $image_name);
-            
-            if ($stmt->execute()) {
+            $stmt->execute([$name, $category_id, $description, $price, $stock, $image_name]);
+
+            if ($stmt->rowCount() > 0) {
                 $_SESSION['success_message'] = "Product added successfully!";
                 header("Location: manage-products.php");
                 exit();
@@ -57,9 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Get categories
+// Get categories using PDO
 $categories_query = "SELECT * FROM categories ORDER BY category_name";
-$categories_result = $conn->query($categories_query);
+$categories_stmt = $conn->prepare($categories_query);
+$categories_stmt->execute();
+$categories_result = $categories_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Include header after all processing is done
 $page_title = "Add Product";
@@ -102,12 +97,12 @@ include 'includes/admin-header.php';
                             <label for="category_id" class="form-label">Category *</label>
                             <select class="form-select" id="category_id" name="category_id" required>
                                 <option value="">Select Category</option>
-                                <?php while ($category = $categories_result->fetch_assoc()): ?>
-                                <option value="<?php echo $category['category_id']; ?>" 
+                                <?php foreach ($categories_result as $category): ?>
+                                <option value="<?php echo $category['category_id']; ?>"
                                         <?php echo (isset($_POST['category_id']) && $_POST['category_id'] == $category['category_id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($category['category_name']); ?>
                                 </option>
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
                             </select>
                             <div class="invalid-feedback">Please select a category.</div>
                         </div>
@@ -202,4 +197,39 @@ include 'includes/admin-header.php';
     </div>
 </div>
 
-<?php include 'includes/admin-footer.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Image preview functionality
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('image-preview');
+
+    if (imageInput && imagePreview) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none';
+            }
+        });
+    }
+
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+});
+</script>
