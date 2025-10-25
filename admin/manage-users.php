@@ -6,17 +6,18 @@ include 'includes/admin-header.php';
 if (isset($_GET['toggle_status']) && is_numeric($_GET['toggle_status'])) {
     $user_id = (int)$_GET['toggle_status'];
 
-    // Get current status
-    $status_query = "SELECT is_active FROM users WHERE user_id = ?";
-    $status_stmt = $conn->prepare($status_query);
-    $status_stmt->execute([$user_id]);
-    $current_status = $status_stmt->fetch(PDO::FETCH_ASSOC)['is_active'];
+    // CRITICAL FIX: Convert URL parameter directly to PostgreSQL boolean
+    // The URL parameter represents the desired status (1 = active, 0 = inactive)
+    $raw_status = $_GET['toggle_status'];
 
-    // Convert to proper boolean (PostgreSQL might return string 't'/'f' or 1/0)
-    $current_status_bool = (bool)$current_status;
+    // Convert to proper PostgreSQL boolean constants
+    if ($raw_status == 1) {
+        $new_status = TRUE;  // Active
+    } else {
+        $new_status = FALSE; // Inactive
+    }
 
-    // Toggle status using proper PostgreSQL boolean keywords
-    $new_status = $current_status_bool ? FALSE : TRUE;
+    // Update user status directly with the converted boolean
     $update_query = "UPDATE users SET is_active = ? WHERE user_id = ?";
     $update_stmt = $conn->prepare($update_query);
     $update_stmt->execute([$new_status, $user_id]);
@@ -289,8 +290,15 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <strong><?php echo formatPrice($user['total_spent'] ?? 0); ?></strong>
                         </td>
                         <td>
-                            <span class="badge bg-<?php echo $user['is_active'] ? 'success' : 'danger'; ?>">
-                                <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
+                            <?php
+                            // Ensure proper boolean conversion for display
+                            $is_active_display = filter_var($user['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                            if ($is_active_display === null) {
+                                $is_active_display = in_array($user['is_active'], [true, 1, '1', 't', 'true', 'TRUE'], true);
+                            }
+                            ?>
+                            <span class="badge bg-<?php echo $is_active_display ? 'success' : 'danger'; ?>">
+                                <?php echo $is_active_display ? 'Active' : 'Inactive'; ?>
                             </span>
                         </td>
                         <td>
@@ -305,11 +313,18 @@ $users_result = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </button>
+                                <?php
+                                // Ensure proper boolean conversion for button logic
+                                $is_active_button = filter_var($user['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                                if ($is_active_button === null) {
+                                    $is_active_button = in_array($user['is_active'], [true, 1, '1', 't', 'true', 'TRUE'], true);
+                                }
+                                ?>
                                 <a href="?toggle_status=<?php echo $user['user_id']; ?>" 
-                                   class="btn btn-outline-<?php echo $user['is_active'] ? 'warning' : 'success'; ?>"
-                                   title="<?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?>"
-                                   onclick="return confirm('Are you sure you want to <?php echo $user['is_active'] ? 'deactivate' : 'activate'; ?> this user?')">
-                                    <i class="fas fa-<?php echo $user['is_active'] ? 'user-slash' : 'user-check'; ?>"></i>
+                                   class="btn btn-outline-<?php echo $is_active_button ? 'warning' : 'success'; ?>"
+                                   title="<?php echo $is_active_button ? 'Deactivate' : 'Activate'; ?>"
+                                   onclick="return confirm('Are you sure you want to <?php echo $is_active_button ? 'deactivate' : 'activate'; ?> this user?')">
+                                    <i class="fas fa-<?php echo $is_active_button ? 'user-slash' : 'user-check'; ?>"></i>
                                 </a>
                             </div>
                         </td>
