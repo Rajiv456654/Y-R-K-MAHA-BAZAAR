@@ -36,7 +36,31 @@ $categories_result = $conn->query($categories_query);
             </div>
             <div class="col-lg-6 text-center">
                 <div class="hero-logo-container">
-                    <img src="assets/images/yrk-logo-hero.svg" alt="YRK MAHA BAZAAR" class="img-fluid yrk-hero-logo" style="max-height: 400px;">
+                    <?php
+                    // Check for PNG logo first (preferred), then SVG
+                    $logo_png = 'assets/images/yrk-logo-hero.png';
+                    $logo_svg = 'assets/images/yrk-logo-hero.svg';
+
+                    if (file_exists($logo_png)) {
+                        $logo_src = $logo_png;
+                        $logo_alt = 'YRK MAHA BAZAAR Logo';
+                    } elseif (file_exists($logo_svg)) {
+                        $logo_src = $logo_svg;
+                        $logo_alt = 'YRK MAHA BAZAAR Logo';
+                    } else {
+                        // Fallback to text logo
+                        echo '<div class="text-center">';
+                        echo '<h2 class="display-4 fw-bold text-white mb-3">YRK</h2>';
+                        echo '<p class="h4 text-white-50">MAHA BAZAAR</p>';
+                        echo '<p class="text-white small">Your Complete Shopping Destination</p>';
+                        echo '</div>';
+                        $logo_displayed = false;
+                    }
+
+                    if (isset($logo_src)) {
+                        echo '<img src="' . $logo_src . '" alt="' . $logo_alt . '" class="img-fluid yrk-hero-logo" style="max-height: 400px;">';
+                    }
+                    ?>
                 </div>
             </div>
         </div>

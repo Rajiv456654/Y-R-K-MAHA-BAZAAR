@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Logo Upload - Y R K MAHA BAZAAR</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .logo-preview {
+            max-width: 300px;
+            max-height: 300px;
+            border: 2px dashed #E50914;
+            border-radius: 15px;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.05), rgba(247, 198, 0, 0.05));
+        }
+
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .upload-success {
+            border-color: #28a745;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(247, 198, 0, 0.05));
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <h1 class="display-5 fw-bold text-primary mb-3">
+                        <i class="fas fa-upload me-2"></i>Upload YRK Logo
+                    </h1>
+                    <p class="lead text-muted">Upload your new YRK MAHA BAZAAR logo to replace the current one</p>
+                </div>
+
+                <!-- Current Logo Display -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-eye me-2"></i>Current Logo
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="logo-preview">
+                            <?php
+                            $logo_png = 'assets/images/yrk-logo-hero.png';
+                            $logo_svg = 'assets/images/yrk-logo-hero.svg';
+
+                            if (file_exists($logo_png)) {
+                                echo '<img src="' . $logo_png . '?v=' . time() . '" alt="Current Logo">';
+                            } elseif (file_exists($logo_svg)) {
+                                echo '<img src="' . $logo_svg . '?v=' . time() . '" alt="Current Logo">';
+                            } else {
+                                echo '<div class="text-muted">';
+                                echo '<i class="fas fa-image fa-4x mb-3"></i>';
+                                echo '<p>Current logo will be replaced</p>';
+                                echo '</div>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Form -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cloud-upload-alt me-2"></i>Upload New Logo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="logoUploadForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="logoFile" class="form-label">
+                                    <i class="fas fa-file-image me-2"></i>Choose Logo File:
+                                </label>
+                                <input type="file" class="form-control" id="logoFile" name="logo" accept="image/*" required>
+                                <div class="form-text">
+                                    Supported formats: PNG, JPG, SVG (Max 5MB)<br>
+                                    Recommended: PNG with transparent background, 800×800px
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                                    <i class="fas fa-upload me-2"></i>Upload & Replace Logo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Instructions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-lightbulb text-warning me-2"></i>Quick Setup:</h6>
+                            <ol class="mb-0">
+                                <li>Select your YRK logo file using the "Choose File" button</li>
+                                <li>Click "Upload & Replace Logo"</li>
+                                <li>Refresh your homepage - new logo will appear with animations!</li>
+                            </ol>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Logo Will Include:</h6>
+                            <ul class="mb-0">
+                                <li>Beautiful glassmorphism container</li>
+                                <li>Smooth hover animations</li>
+                                <li>Responsive design for all devices</li>
+                                <li>Professional drop shadows</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form submission
+        document.getElementById('logoUploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const uploadBtn = document.getElementById('uploadBtn');
+            const logoPreview = document.querySelector('.logo-preview');
+
+            // Show loading
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+            uploadBtn.disabled = true;
+
+            fetch('upload-logo.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success
+                    logoPreview.classList.add('upload-success');
+                    uploadBtn.innerHTML = '<i class="fas fa-check me-2"></i>Logo Updated!';
+                    uploadBtn.className = 'btn btn-success btn-lg';
+
+                    // Update preview
+                    const previewImg = logoPreview.querySelector('img');
+                    if (previewImg) {
+                        previewImg.src = 'assets/images/yrk-logo-hero.png?v=' + Date.now();
+                    }
+
+                    // Show success message
+                    setTimeout(() => {
+                        alert('✅ Logo uploaded successfully!\n\nYour new YRK logo is now live on your website with beautiful animations!\n\nRefresh your homepage to see it in action.');
+                    }, 500);
+
+                } else {
+                    alert('❌ Upload failed: ' + data.message);
+                    uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Upload & Replace Logo';
+                    uploadBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                alert('❌ Upload error: ' + error.message);
+                uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Upload & Replace Logo';
+                uploadBtn.disabled = false;
+            });
+        });
+
+        // File preview
+        document.getElementById('logoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewDiv = document.querySelector('.logo-preview');
+                    previewDiv.innerHTML = '<img src="' + e.target.result + '" alt="New Logo Preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

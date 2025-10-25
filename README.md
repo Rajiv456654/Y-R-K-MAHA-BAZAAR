@@ -32,31 +32,74 @@ A fully functional, responsive e-commerce website built with HTML, CSS, JavaScri
 - **File Upload Security**: Secure image upload with validation
 - **Access Control**: Role-based access for admin and user areas
 
-## 🛠️ Technology Stack
+## 🎨 Logo Customization
 
-| Component | Technology |
-|-----------|------------|
-| **Frontend** | HTML5, CSS3, JavaScript, Bootstrap 5 |
-| **Backend** | PHP 7.4+ |
-| **Database** | MySQL 5.7+ |
-| **Icons** | Font Awesome 6 |
-| **Charts** | Chart.js |
-| **Fonts** | Google Fonts (Poppins) |
+### YRK Logo Replacement System
+Your website includes a complete logo replacement system with multiple options:
+
+#### 📁 Current Logo Location
+```
+assets/images/yrk-logo-hero.png  # Main logo file
+```
+
+#### 🚀 Replacement Methods
+
+**Method 1: Simple File Replacement**
+```bash
+1. Save your logo as: yrk-logo-hero.png
+2. Copy to: assets/images/yrk-logo-hero.png
+3. Refresh website - logo appears with animations!
+```
+
+**Method 2: Web Interface**
+```bash
+Visit: http://localhost/Y R K MAHA BAZAAR/logo-replacement-helper.html
+- Visual logo preview
+- Drag & drop upload
+- One-click replacement
+```
+
+**Method 3: Quick Upload**
+```bash
+Visit: http://localhost/Y R K MAHA BAZAAR/quick-logo-upload.html
+- Simple upload form
+- Instant preview
+- Automatic replacement
+```
+
+#### ✨ Logo Features
+- **Responsive Design**: Adapts to all screen sizes
+- **Beautiful Animations**: Glassmorphism effects, hover animations
+- **Auto-Detection**: Supports PNG, SVG, JPG formats
+- **PWA Compatible**: Generates app icons automatically
+
+#### 📱 Logo Display Locations
+- Homepage hero section (main display)
+- Website navigation bar (brand text)
+- Admin panel header
+- Browser tab favicon
+- PWA mobile app icons
+
+### Icon Generation System
+```bash
+Visit: http://localhost/Y R K MAHA BAZAAR/icon-generator.html
+- Auto-generates all PWA icons from your logo
+- Creates favicon and app icons
+- Supports multiple sizes (16px to 512px)
+```
 
 ## 📁 Project Structure
 
 ```
 Y R K MAHA BAZAAR/
 │
-├── index.php                 # Homepage
-├── about.php                 # About us page
-├── contact.php               # Contact page
-├── login.php                 # User login
-├── register.php              # User registration
-├── logout.php                # User logout
-├── profile.php               # User profile
-├── orders.php                # User order history
-├── cancel-order.php          # Order cancellation
+├── logo-replacement-helper.php      # Logo setup CLI tool
+├── logo-replacement-helper.html     # Visual logo upload interface
+├── quick-logo-upload.html           # Simple logo upload form
+├── upload-logo.php                  # Logo upload handler
+├── generate-icons.php               # PWA icon generator
+├── icon-generator.html              # Icon generation interface
+├── README-logo-replacement.md       # Logo replacement guide
 │
 ├── products/
 │   ├── product-list.php      # Product catalog
@@ -95,10 +138,14 @@ Y R K MAHA BAZAAR/
 │
 ├── assets/
 │   ├── css/
-│   │   └── style.css         # Custom styles
+│   │   └── style.css         # Custom styles (includes logo animations)
 │   ├── js/
 │   │   └── script.js         # Custom JavaScript
 │   └── images/
+│       ├── yrk-logo-hero.png # Main YRK logo (PNG format)
+│       ├── yrk-logo-hero.svg # Main YRK logo (SVG format)
+│       ├── backups/          # Logo backup files
+│       ├── icons/            # Generated PWA icons
 │       ├── products/         # Product images
 │       └── default-product.jpg
 │
@@ -135,15 +182,12 @@ Y R K MAHA BAZAAR/
 2. Import the SQL file: `database/yrk_maha_bazaar.sql`
 3. Verify all tables are created successfully
 
-### Step 3: File Setup
-1. Copy all project files to `C:\xampp\htdocs\Y R K MAHA BAZAAR\`
-2. Ensure proper folder permissions for image uploads
-3. Update database credentials in `includes/db_connect.php` if needed
-
-### Step 4: Configuration
-1. Check database connection settings
-2. Ensure all file paths are correct
-3. Create product images directory with write permissions
+### Step 3: Logo Setup (Optional)
+1. **Add Your Logo**: Place your YRK logo in `assets/images/yrk-logo-hero.png`
+2. **Logo Tools**: Use the built-in logo replacement tools:
+   - Visit: `logo-replacement-helper.html` for visual upload
+   - Visit: `icon-generator.html` to generate PWA icons
+3. **Logo Features**: Automatic animations and responsive design included
 
 ### Step 5: Testing
 1. Access the website at `http://localhost/Y R K MAHA BAZAAR/`
